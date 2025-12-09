@@ -9,12 +9,12 @@ public interface ILauncherManager
 	void SetWindowFullScreen(bool fullscreen, int width, int height);
 	bool IsWindowFullScreen();
 
-	void MoveWindow(int x, int y) ;
-	void SizeWindow(int width, int tall) ;
+	void MoveWindow(int x, int y);
+	void SizeWindow(int width, int tall);
 	void PumpWindowsMessageLoop();
-		
+
 	void DestroyGameWindow();
-	void SetApplicationIcon(ReadOnlySpan<char> appIconFile) ;
+	void SetApplicationIcon(ReadOnlySpan<char> appIconFile);
 
 	void GetMouseDelta(out int x, out int y, bool ignoreNextMouseDelta = false);
 
@@ -30,4 +30,6 @@ public interface ILauncherManager
 	void SetMouseCursor(ICursor? currentlySetCursor);
 	void SetMouseVisible(bool v);
 	void SetWindowRelativeMouseMode(bool cursorLocked);
+
+	float GetContentScale();
 }

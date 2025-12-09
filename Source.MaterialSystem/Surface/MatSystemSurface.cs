@@ -86,6 +86,7 @@ public class MatSystemSurface : IMatSystemSurface
 	readonly TextureDictionary TextureDictionary;
 
 	bool ProvidedInterfaces;
+	bool HighDPI;
 
 	[MemberNotNull(nameof(VGuiInput))]
 	void LinkVGUI() {
@@ -138,6 +139,7 @@ public class MatSystemSurface : IMatSystemSurface
 		Panel.AllowDependencyInjection = false; // We're good now
 		SetEmbeddedPanel(DefaultEmbeddedPanel);
 		this.launcherMgr = launcherMgr;
+		HighDPI = CommandLine.CheckParm("-highdpi");
 	}
 
 	private void InitInput() {
@@ -217,7 +219,11 @@ public class MatSystemSurface : IMatSystemSurface
 		renderContext.LoadIdentity();
 		renderContext.Scale(1, -1, 1);
 
-		renderContext.Ortho(pixelOffsetX, pixelOffsetY, width + pixelOffsetX, height + pixelOffsetY, -1.0f, 1.0f);
+		float scale = 1.0f;
+		if (HighDPI)
+			scale = launcherMgr.GetContentScale();
+
+		renderContext.Ortho(pixelOffsetX, pixelOffsetY, (width / scale) + pixelOffsetX, (height / scale) + pixelOffsetY, -1.0f, 1.0f);
 
 		// make sure there is no translation and rotation laying around
 		renderContext.MatrixMode(MaterialMatrixMode.Model);
@@ -813,6 +819,12 @@ public class MatSystemSurface : IMatSystemSurface
 
 		IMatRenderContext renderContext = materials.GetRenderContext();
 		renderContext.GetViewport(out _, out _, out wide, out tall);
+
+		if (HighDPI) {
+			float scale = launcherMgr.GetContentScale();
+			wide = (int)(wide / scale);
+			tall = (int)(tall / scale);
+		}
 	}
 
 	public void GetTextSize(IFont? font, ReadOnlySpan<char> text, out int wide, out int tall) {

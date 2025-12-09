@@ -6,6 +6,7 @@ using Source.Common.GUI;
 using Source.Common.Launcher;
 using Source.Common.MaterialSystem;
 using Source.Common.ShaderAPI;
+using Source.Common.Commands;
 
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -94,11 +95,27 @@ public unsafe class SDL3_LauncherManager : ILauncherManager, IGraphicsProvider
 		InitCursors();
 	}
 	SDL3_Window window;
+	bool highDpiMode;
+
 	public unsafe bool CreateGameWindow(string title, bool windowed, int width, int height) {
 		IMaterialSystem materials = services.GetRequiredService<IMaterialSystem>();
 		SDL_WindowFlags flags = 0;
 		flags |= SDL_WindowFlags.SDL_WINDOW_OPENGL;
+
+		var cmd = services.GetRequiredService<ICommandLine>();
+		bool highDpi = cmd.CheckParm("-highdpi");
+		highDpiMode = highDpi;
+
+		if (highDpi)
+			flags |= SDL_WindowFlags.SDL_WINDOW_HIGH_PIXEL_DENSITY;
+
 		window = new SDL3_Window(services).Create(title, width, height, flags);
+
+		if (highDpi) {
+			float scale = GetContentScale();
+			window.MouseXScale = 1.0f / scale;
+			window.MouseYScale = 1.0f / scale;
+		}
 
 		return true;
 	}
@@ -166,7 +183,18 @@ public unsafe class SDL3_LauncherManager : ILauncherManager, IGraphicsProvider
 	}
 
 	public IWindow GetWindow() => window;
-	public void PumpWindowsMessageLoop() => window?.PumpMessages();
+	public void PumpWindowsMessageLoop() {
+		if (window != null) {
+			if (highDpiMode) {
+				float scale = GetContentScale();
+				if (window.MouseXScale != 1.0f / scale) {
+					window.MouseXScale = 1.0f / scale;
+					window.MouseYScale = 1.0f / scale;
+				}
+			}
+			window.PumpMessages();
+		}
+	}
 	public int GetEvents(WindowEvent[] eventBuffer, int length) => window.GetEvents(eventBuffer, length);
 
 	public void CenterWindow(int v2, int v3) {
@@ -272,6 +300,22 @@ public unsafe class SDL3_LauncherManager : ILauncherManager, IGraphicsProvider
 
 	public void SetWindowRelativeMouseMode(bool cursorLocked) {
 		SDL3.SDL_SetWindowRelativeMouseMode(window.HardwareHandle, cursorLocked);
+	}
+
+	public float GetContentScale() {
+		float scale = SDL3.SDL_GetWindowDisplayScale(window.HardwareHandle);
+
+		if (scale <= 1.01f) {
+			int w, h, pw, ph;
+			SDL3.SDL_GetWindowSize(window.HardwareHandle, &w, &h);
+			SDL3.SDL_GetWindowSizeInPixels(window.HardwareHandle, &pw, &ph);
+			if (w > 0) {
+				float calcScale = pw / w;
+				if (calcScale > 1.0f) return calcScale;
+			}
+		}
+
+		return scale <= 0.0f ? 1.0f : scale;
 	}
 }
 
