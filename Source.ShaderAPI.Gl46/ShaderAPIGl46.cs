@@ -2459,6 +2459,8 @@ public class ShaderAPIGl46 : IShaderAPI, IShaderDevice, IDebugTextureInfo
 		return (int)MaterialFogMode.None; // TODO!
 	}
 
+	public double CurrentTime() => Platform.Time;
+
 	public bool ShouldWriteDepthToDestAlpha() =>
 		HardwareConfig.SupportsPixelShaders_2_b() &&
 		(SceneFogMode != MaterialFogMode.LinearBelowFogZ) &&

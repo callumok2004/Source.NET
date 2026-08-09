@@ -139,6 +139,7 @@ public interface IShaderDynamicAPI
 	bool IsHWMorphingEnabled();
 	void GetWorldSpaceCameraPosition(ref Span<float> eyePos);
 	int GetPixelFogCombo();
+	double CurrentTime();
 	FlashlightState GetFlashlightStateEx(out Matrix4x4 worldToTexture, out ITexture? flashlightDepthTexture);
 	bool ShouldWriteDepthToDestAlpha();
 	void MarkUnusedVertexFields(int v, Span<bool> unusedTexCoords);

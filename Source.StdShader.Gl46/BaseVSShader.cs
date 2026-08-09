@@ -472,6 +472,28 @@ public partial class BaseVSShader : BaseShader
 		ShaderAPI!.SetPixelShaderConstant(pixelReg, val);
 	}
 
+	public void SetPixelShaderConstantGammaToLinear(int pixelReg, int constantVar) {
+		Assert(!IsSnapshotting());
+		IMaterialVar[] shaderParams = Params!;
+		if (shaderParams == null || constantVar == -1)
+			return;
+
+		IMaterialVar pixelVar = shaderParams[constantVar];
+		Assert(pixelVar != null);
+
+		Span<float> val = stackalloc float[4];
+		if (pixelVar.GetVarType() == MaterialVarType.Vector)
+			pixelVar.GetVecValue(val);
+		else
+			val[0] = val[1] = val[2] = val[3] = pixelVar.GetFloatValue();
+
+		val[0] = val[0] > 1.0f ? val[0] : MathLib.GammaToLinear(val[0]);
+		val[1] = val[1] > 1.0f ? val[1] : MathLib.GammaToLinear(val[1]);
+		val[2] = val[2] > 1.0f ? val[2] : MathLib.GammaToLinear(val[2]);
+
+		ShaderAPI!.SetPixelShaderConstant(pixelReg, val);
+	}
+
 	public void InitUnlitGeneric(int baseTextureVar, int detailVar, int envmapVar, int envmapMaskVar) {
 		IMaterialVar[] shaderParams = Params!;
 

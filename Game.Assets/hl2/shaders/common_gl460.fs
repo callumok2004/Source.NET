@@ -72,6 +72,11 @@ vec4 DecompressNormal(sampler2D NormalSampler, vec2 tc, int nDecompressionMode)
     return DecompressNormal(NormalSampler, tc, nDecompressionMode, NormalSampler);
 }
 
+vec3 NormalizeWithCubemap(samplerCube normalizeSampler, vec3 input_)
+{
+    return texture(normalizeSampler, input_).xyz * 2.0 - 1.0;
+}
+
 // texture combining modes for combining base and detail/basetexture2
 #define TCOMBINE_RGB_EQUALS_BASE_x_DETAILx2 0				// original mode
 #define TCOMBINE_RGB_ADDITIVE 1								// base.rgb+detail.rgb*fblend
