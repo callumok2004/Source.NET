@@ -5,8 +5,6 @@ using Source.Common.Utilities;
 
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics;
 
 namespace Source.MaterialSystem;
 
@@ -302,6 +300,12 @@ public class MatRenderContext : IMatRenderContextInternal
 		return FlashlightEnable;
 	}
 
+	float CurToneMapScale = 1.0f;
+
+	public void TurnOnToneMapping() => SetToneMappingScaleLinear(new(CurToneMapScale, CurToneMapScale, CurToneMapScale));
+
+	public void SetToneMappingScaleLinear(in Vector3 scale) => shaderAPI.SetToneMappingScaleLinear(in scale);
+
 	public void BeginFrame() => shaderAPI.BeginFrame();
 	public void EndFrame() => shaderAPI.EndFrame();
 
@@ -326,22 +330,23 @@ public class MatRenderContext : IMatRenderContextInternal
 
 	public void ForceSyncMatrix(MaterialMatrixMode mode) {
 		ref MatrixStackItem top = ref MatrixStacks[(int)mode].Top();
-		if (MatrixStacksDirtyStates[(int)matrixMode]) {
+		if (MatrixStacksDirtyStates[(int)mode]) {
 			bool setMode = matrixMode != mode;
 			if (setMode)
 				shaderAPI.MatrixMode(mode);
 
 			if (!top.Matrix.IsIdentity) {
-				shaderAPI.LoadMatrix(in top.Matrix);
+				Matrix4x4 transposeTop = Matrix4x4.Transpose(top.Matrix);
+				shaderAPI.LoadMatrix(in transposeTop);
 			}
 			else {
 				shaderAPI.LoadIdentity();
 			}
 
 			if (setMode)
-				shaderAPI.MatrixMode(mode);
+				shaderAPI.MatrixMode(matrixMode);
 
-			MatrixStacksDirtyStates[(int)matrixMode] = false;
+			MatrixStacksDirtyStates[(int)mode] = false;
 		}
 	}
 
@@ -352,7 +357,8 @@ public class MatRenderContext : IMatRenderContextInternal
 				if (MatrixStacksDirtyStates[i]) {
 					shaderAPI.MatrixMode((MaterialMatrixMode)i);
 					if (!top.Matrix.IsIdentity) {
-						shaderAPI.LoadMatrix(in top.Matrix);
+						Matrix4x4 transposeTop = Matrix4x4.Transpose(top.Matrix);
+						shaderAPI.LoadMatrix(in transposeTop);
 					}
 					else {
 						shaderAPI.LoadIdentity();
@@ -619,6 +625,7 @@ public class MatRenderContext : IMatRenderContextInternal
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public ShaderAPITextureHandle_t GetGreyAlphaZeroTextureHandle() => materials.GetGreyAlphaZeroTextureHandle();
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public ShaderAPITextureHandle_t GetWhiteTextureHandle() => materials.GetWhiteTextureHandle();
 
+	readonly ITextureManager TextureSystem = (Singleton<ITextureManager>() as TextureManager)!;
 	public void BindStandardTexture(Sampler sampler, StandardTextureId id) {
 		switch (id) {
 			case StandardTextureId.Lightmap: BindLightmap(sampler); break;
@@ -627,6 +634,7 @@ public class MatRenderContext : IMatRenderContextInternal
 			case StandardTextureId.Black: shaderAPI.BindTexture(sampler, GetBlackTextureHandle()); break;
 			case StandardTextureId.Grey: shaderAPI.BindTexture(sampler, GetGreyTextureHandle()); break;
 			case StandardTextureId.GreyAlphaZero: shaderAPI.BindTexture(sampler, GetGreyAlphaZeroTextureHandle()); break;
+			case StandardTextureId.NormalizationCubemapSigned: TextureSystem.SignedNormalizationCubemap().Bind(sampler); break;
 			default: Assert(false); break;
 		}
 	}

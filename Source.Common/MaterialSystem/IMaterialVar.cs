@@ -31,8 +31,15 @@ public struct TokenCache
 	public bool Cached;
 }
 
+public struct MaterialVarMatrix
+{
+	public Matrix4x4 Matrix;
+	public bool IsIdent;
+}
+
 public abstract class IMaterialVar
 {
+	protected MaterialVarMatrix Matrix;
 	protected string StringVal = "";
 	protected int IntVal;
 	protected Vector4 VecVal;
@@ -66,6 +73,7 @@ public abstract class IMaterialVar
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public void SetVecValue(in Vector4 xyzw) => SetVecValue(xyzw.X, xyzw.Y, xyzw.Z, xyzw.W);
 
 	public abstract void GetVecValue(Span<float> color);
+	public abstract Span<float> GetVecValue();
 
 	public void GetLinearVecValue(Span<float> pVal, int numComps) {
 		Assert(numComps <= 4);
@@ -101,17 +109,16 @@ public abstract class IMaterialVar
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void GetVecValue(out Vector3 vec) {
-		Span<float> retv = stackalloc float[2];
+		Span<float> retv = stackalloc float[3];
 		GetVecValue(retv);
 		vec = new(retv[0], retv[1], retv[2]);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void GetVecValue(out Vector4 vec) {
-		Span<float> retv = stackalloc float[2];
+		Span<float> retv = stackalloc float[4];
 		GetVecValue(retv);
 		vec = new(retv[0], retv[1], retv[2], retv[3]);
 	}
-
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vector2 GetVec2Value() {
@@ -121,13 +128,13 @@ public abstract class IMaterialVar
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vector3 GetVec3Value() {
-		Span<float> retv = stackalloc float[2];
+		Span<float> retv = stackalloc float[3];
 		GetVecValue(retv);
 		return new(retv[0], retv[1], retv[2]);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vector4 GetVec4Value() {
-		Span<float> retv = stackalloc float[2];
+		Span<float> retv = stackalloc float[4];
 		GetVecValue(retv);
 		return new(retv[0], retv[1], retv[2], retv[3]);
 	}
