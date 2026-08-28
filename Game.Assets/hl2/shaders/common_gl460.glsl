@@ -1,6 +1,28 @@
 #ifndef COMMON_GL460_GLSL
 #define COMMON_GL460_GLSL
 
+#ifdef SOURCE_VULKAN
+#define TEX2D_PARAM(n)       texture2D n##_tex, sampler n##_smp
+#define TEX2D_ARG(n)         n##_tex, n##_smp
+#define TEX2D(n)             sampler2D(n##_tex, n##_smp)
+#define TEX2DSHADOW_PARAM(n) texture2D n##_tex, sampler n##_smp
+#define TEX2DSHADOW_ARG(n)   n##_tex, n##_smp
+#define TEX2DSHADOW(n)       sampler2DShadow(n##_tex, n##_smp)
+#define TEXCUBE_PARAM(n)     textureCube n##_tex, sampler n##_smp
+#define TEXCUBE_ARG(n)       n##_tex, n##_smp
+#define TEXCUBE(n)           samplerCube(n##_tex, n##_smp)
+#else
+#define TEX2D_PARAM(n)       sampler2D n
+#define TEX2D_ARG(n)         n
+#define TEX2D(n)             n
+#define TEX2DSHADOW_PARAM(n) sampler2DShadow n
+#define TEX2DSHADOW_ARG(n)   n
+#define TEX2DSHADOW(n)       n
+#define TEXCUBE_PARAM(n)     samplerCube n
+#define TEXCUBE_ARG(n)       n
+#define TEXCUBE(n)           n
+#endif
+
 #define OO_SQRT_3 0.57735025882720947
 const vec3 bumpBasis[3] = vec3[3](
     vec3( 0.81649661064147949, 0.0, OO_SQRT_3 ),

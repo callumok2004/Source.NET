@@ -117,16 +117,76 @@ out vec4 fragColor;
 #define g_DetailTint				ps_const[10].rgb
 #endif
 
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 0) uniform texture2D BaseTextureSampler_tex;
+layout(set = 1, binding = 1) uniform sampler BaseTextureSampler_smp;
+#define BaseTextureSampler sampler2D(BaseTextureSampler_tex, BaseTextureSampler_smp)
+#else
 layout(binding = 0) uniform sampler2D BaseTextureSampler;
+#endif
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 2) uniform textureCube EnvmapSampler_tex;
+layout(set = 1, binding = 3) uniform sampler EnvmapSampler_smp;
+#define EnvmapSampler samplerCube(EnvmapSampler_tex, EnvmapSampler_smp)
+#else
 layout(binding = 1) uniform samplerCube EnvmapSampler;
+#endif
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 4) uniform texture2D DetailSampler_tex;
+layout(set = 1, binding = 5) uniform sampler DetailSampler_smp;
+#define DetailSampler sampler2D(DetailSampler_tex, DetailSampler_smp)
+#else
 layout(binding = 2) uniform sampler2D DetailSampler;
+#endif
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 8) uniform texture2D EnvmapMaskSampler_tex;
+layout(set = 1, binding = 9) uniform sampler EnvmapMaskSampler_smp;
+#define EnvmapMaskSampler sampler2D(EnvmapMaskSampler_tex, EnvmapMaskSampler_smp)
+#else
 layout(binding = 4) uniform sampler2D EnvmapMaskSampler;
+#endif
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 12) uniform texture2D RandRotSampler_tex;
+layout(set = 1, binding = 13) uniform sampler RandRotSampler_smp;
+#define RandRotSampler sampler2D(RandRotSampler_tex, RandRotSampler_smp)
+#else
 layout(binding = 6) uniform sampler2D RandRotSampler;			// RandomRotation sampler
+#endif
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 14) uniform texture2D FlashlightSampler_tex;
+layout(set = 1, binding = 15) uniform sampler FlashlightSampler_smp;
+#define FlashlightSampler sampler2D(FlashlightSampler_tex, FlashlightSampler_smp)
+#else
 layout(binding = 7) uniform sampler2D FlashlightSampler;
+#endif
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 16) uniform texture2D ShadowDepthSampler_tex;
+layout(set = 1, binding = 17) uniform sampler ShadowDepthSampler_smp;
+#define ShadowDepthSampler sampler2DShadow(ShadowDepthSampler_tex, ShadowDepthSampler_smp)
+#else
 layout(binding = 8) uniform sampler2DShadow ShadowDepthSampler;	// Flashlight shadow depth map sampler
+#endif
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 24) uniform texture2D ShadowDepthSamplerRaw_tex;
+layout(set = 1, binding = 25) uniform sampler ShadowDepthSamplerRaw_smp;
+#define ShadowDepthSamplerRaw sampler2D(ShadowDepthSamplerRaw_tex, ShadowDepthSamplerRaw_smp)
+#else
 layout(binding = 8) uniform sampler2D ShadowDepthSamplerRaw;
+#endif
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 20) uniform texture2D DepthSampler_tex;
+layout(set = 1, binding = 21) uniform sampler DepthSampler_smp;
+#define DepthSampler sampler2D(DepthSampler_tex, DepthSampler_smp)
+#else
 layout(binding = 10) uniform sampler2D DepthSampler;			//depth buffer sampler for depth blending
+#endif
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 22) uniform texture2D SelfIllumMaskSampler_tex;
+layout(set = 1, binding = 23) uniform sampler SelfIllumMaskSampler_smp;
+#define SelfIllumMaskSampler sampler2D(SelfIllumMaskSampler_tex, SelfIllumMaskSampler_smp)
+#else
 layout(binding = 11) uniform sampler2D SelfIllumMaskSampler;	// selfillummask
+#endif
 
 // Calculate unified fog
 float CalcPixelFogFactorConst(float fPixelFogType, vec4 fogParams, float flEyePosZ, float flWorldPosZ, float flProjPosZ)
@@ -195,15 +255,13 @@ void main()
 #endif // !SEAMLESS_BASE
 
     if(isAlphaTesting){
-        switch(alphaTestFunc){
-            case 0: discard; break;
-            case 1: if(baseColor.a >= alphaTestRef){ discard; } break;
-            case 2: if(baseColor.a != alphaTestRef){ discard; } break;
-            case 3: if(baseColor.a > alphaTestRef){ discard; } break;
-            case 4: if(baseColor.a <= alphaTestRef){ discard; } break;
-            case 5: if(baseColor.a == alphaTestRef){ discard; } break;
-            case 6: if(baseColor.a < alphaTestRef){ discard; } break;
-        }
+        if(alphaTestFunc == 0){ discard; }
+        else if(alphaTestFunc == 1){ if(baseColor.a >= alphaTestRef){ discard; } }
+        else if(alphaTestFunc == 2){ if(baseColor.a != alphaTestRef){ discard; } }
+        else if(alphaTestFunc == 3){ if(baseColor.a > alphaTestRef){ discard; } }
+        else if(alphaTestFunc == 4){ if(baseColor.a <= alphaTestRef){ discard; } }
+        else if(alphaTestFunc == 5){ if(baseColor.a == alphaTestRef){ discard; } }
+        else if(alphaTestFunc == 6){ if(baseColor.a < alphaTestRef){ discard; } }
     }
 
 #if DISTANCEALPHA
@@ -323,8 +381,8 @@ void main()
         bool bUseWorldNormal = true;
         vec3 flashlightColor = DoFlashlight(g_FlashlightPos, vs_WorldPos_ProjPosZ.xyz, flashlightSpacePosition,
             vs_WorldSpaceNormal, g_FlashlightAttenuationFactors.xyz,
-            g_FlashlightAttenuationFactors.w, FlashlightSampler, ShadowDepthSampler, ShadowDepthSamplerRaw,
-            RandRotSampler, nShadowSampleLevel, bDoShadows, false, vs_ProjPos.xy / vs_ProjPos.w, false, g_EnvmapContrast_ShadowTweaks, bUseWorldNormal);
+            g_FlashlightAttenuationFactors.w, TEX2D_ARG(FlashlightSampler), TEX2DSHADOW_ARG(ShadowDepthSampler), TEX2D_ARG(ShadowDepthSamplerRaw),
+            TEX2D_ARG(RandRotSampler), nShadowSampleLevel, bDoShadows, false, vs_ProjPos.xy / vs_ProjPos.w, false, g_EnvmapContrast_ShadowTweaks, bUseWorldNormal);
 
         diffuseLighting = flashlightColor;
     }
@@ -399,7 +457,7 @@ void main()
         vScreenPos.x = vs_ProjPos.x;
         vScreenPos.y = -vs_ProjPos.y;
         vScreenPos = (vScreenPos + vs_ProjPos.w) * 0.5;
-        alpha *= DepthFeathering(DepthSampler, vScreenPos / vs_ProjPos.w, vs_ProjPos.w - vs_ProjPos.z, vs_ProjPos.w, g_DepthFeatheringConstants);
+        alpha *= DepthFeathering(TEX2D_ARG(DepthSampler), vScreenPos / vs_ProjPos.w, vs_ProjPos.w - vs_ProjPos.z, vs_ProjPos.w, g_DepthFeatheringConstants);
     }
 #endif
 

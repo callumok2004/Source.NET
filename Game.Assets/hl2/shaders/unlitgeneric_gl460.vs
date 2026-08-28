@@ -18,7 +18,9 @@ layout(std140, binding = 5) uniform source_vs_constants {
 const int VertexColor = 16;
 const int VertexAlpha = 32;
 
-uniform int flags;
+layout(std140, binding = 1) uniform source_base_sharedUBO {
+    int flags;
+};
 
 out vec2 vs_TexCoord;
 out vec4 vs_Color;

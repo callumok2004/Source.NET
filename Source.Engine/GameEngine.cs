@@ -37,8 +37,8 @@ public class GameEngine : IEngine
 
 		MinFrameTime = 0;
 
+#if !DEBUG
 		double fps = fps_max.GetDouble();
-
 		if (!cl.IsConnected()) {
 			double menu = fps_max_menu.GetDouble();
 			if (menu > 0)
@@ -50,7 +50,9 @@ public class GameEngine : IEngine
 			if (nofocus > 0)
 				fps = fps > 0 ? Math.Min(fps, nofocus) : nofocus;
 		}
-
+#else
+		double fps = 0; // temp, dont commit this
+#endif
 		if (fps > 0) {
 			fps = Math.Clamp(fps, MIN_FPS, MAX_FPS);
 			double minFrametime = 1 / fps;

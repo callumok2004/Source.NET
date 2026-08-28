@@ -1,3 +1,5 @@
+using NeoVeldrid;
+
 using Source.Common.MaterialSystem;
 using Source.Common.ShaderAPI;
 
@@ -5,11 +7,8 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
 
-namespace Source.ShaderAPI.Gl46;
+namespace Source.ShaderAPI.Veldrid;
 
-/// <summary>
-/// Shared uniforms between both types of shaders.
-/// </summary>
 public struct SourceSharedShadowState
 {
 	public int Flags;
@@ -18,9 +17,6 @@ public struct SourceSharedShadowState
 	public int Pad2;
 }
 
-/// <summary>
-/// Uniforms for the vertex shader the ShadowState represents.
-/// </summary>
 public struct SourceVertexSharedShadowState
 {
 	public int NumBones;
@@ -30,29 +26,23 @@ public struct SourceVertexSharedShadowState
 	public Vector4 LightEnabled;
 }
 
-/// <summary>
-/// Uniforms for the pixel shader the ShadowState represents.
-/// </summary>
 public struct SourcePixelSharedShadowState
 {
 	public int IsAlphaTesting;
 	public int AlphaTestFunc;
 	public float AlphaTestRef;
+	public float Pad0;
 }
 
-/// <summary>
-/// A shader state. Represents the board (GL state machine) and shader uniforms together.
-/// During shader initialization/recomputes, this state is recalculated based on input variables, etc.
-/// </summary>
-public class ShadowStateGl46 : IShaderShadow
+public class ShadowStateVeldrid : IShaderShadow
 {
 	internal readonly IShaderSystemInternal Shaders;
 	internal readonly IShaderAPI ShaderAPI;
 	readonly IMaterialSystemHardwareConfig HardwareConfig = Singleton<IMaterialSystemHardwareConfig>();
 
-	public uint BASE_UBO;
-	public uint VERTEX_UBO;
-	public uint PIXEL_UBO;
+	public DeviceBuffer? BaseUBO;
+	public DeviceBuffer? VertexUBO;
+	public DeviceBuffer? PixelUBO;
 
 	public GraphicsBoardState State;
 	public SourceSharedShadowState Base;
@@ -78,19 +68,21 @@ public class ShadowStateGl46 : IShaderShadow
 
 		shaderUniforms.Add(textureVar);
 	}
+
 	public void ActivateShaderUniforms() {
 		foreach (var var in shaderUniforms) {
 			ShaderAPI.SetShaderUniform(var);
 		}
 	}
-	private static unsafe int SizeAligned<T>(int alignment = 16) where T : unmanaged {
-		var size = sizeof(T);
-		var a = alignment - (size % alignment);
-		return size + a;
+
+	private static unsafe uint SizeAligned<T>(int alignment = 16) where T : unmanaged {
+		int size = sizeof(T);
+		int a = alignment - (size % alignment);
+		return (uint)(size + a);
 	}
 
 	string? name;
-	public unsafe ShadowStateGl46(IShaderAPI shaderAPI, IShaderSystemInternal shaderSystem, ReadOnlySpan<char> name = default) {
+	public ShadowStateVeldrid(IShaderAPI shaderAPI, IShaderSystemInternal shaderSystem, ReadOnlySpan<char> name = default) {
 		ShaderAPI = shaderAPI;
 		Shaders = shaderSystem;
 		this.name = name.IsEmpty ? null : new(name);
@@ -103,21 +95,27 @@ public class ShadowStateGl46 : IShaderShadow
 	public VertexFormat GetVertexFormat() => VertexFormat;
 
 	bool createdShaderObjects = false;
-	private unsafe void CreateShaderObjects() {
+
+	GraphicsDevice? Device => (ShaderAPI as ShaderAPIVeldrid)?.GraphicsDevice;
+
+	private void CreateShaderObjects() {
 		if (createdShaderObjects)
 			return;
 
-		BASE_UBO = glCreateBuffer();
-		glObjectLabel(GL_BUFFER, BASE_UBO, $"ShaderAPI ShadowState[base] '{name}'");
-		glNamedBufferData(BASE_UBO, SizeAligned<SourceSharedShadowState>(), null, GL_DYNAMIC_DRAW);
+		GraphicsDevice? device = Device;
+		if (device == null)
+			return;
 
-		VERTEX_UBO = glCreateBuffer();
-		glObjectLabel(GL_BUFFER, VERTEX_UBO, $"ShaderAPI ShadowState[vertex] '{name}'");
-		glNamedBufferData(VERTEX_UBO, SizeAligned<SourceVertexSharedShadowState>(), null, GL_DYNAMIC_DRAW);
+		ResourceFactory factory = device.ResourceFactory;
 
-		PIXEL_UBO = glCreateBuffer();
-		glObjectLabel(GL_BUFFER, PIXEL_UBO, $"ShaderAPI ShadowState[pixel] '{name}'");
-		glNamedBufferData(PIXEL_UBO, SizeAligned<SourcePixelSharedShadowState>(), null, GL_DYNAMIC_DRAW);
+		BaseUBO = factory.CreateBuffer(new BufferDescription(SizeAligned<SourceSharedShadowState>(), BufferUsage.UniformBuffer));
+		BaseUBO.Name = $"ShaderAPI ShadowState[base] '{name}'";
+
+		VertexUBO = factory.CreateBuffer(new BufferDescription(SizeAligned<SourceVertexSharedShadowState>(), BufferUsage.UniformBuffer));
+		VertexUBO.Name = $"ShaderAPI ShadowState[vertex] '{name}'";
+
+		PixelUBO = factory.CreateBuffer(new BufferDescription(SizeAligned<SourcePixelSharedShadowState>(), BufferUsage.UniformBuffer));
+		PixelUBO.Name = $"ShaderAPI ShadowState[pixel] '{name}'";
 
 		createdShaderObjects = true;
 	}
@@ -125,46 +123,40 @@ public class ShadowStateGl46 : IShaderShadow
 	bool needsBufferUpload = true;
 	internal VertexFormat VertexFormat;
 
-	public unsafe void Dispose() {
-		if (!ThreadInMainThread()) {
-			Warning("NOT IN MAIN THREAD - CANNOT DELETE UBO - GRAPHICS MEMORY LEAK\n");
-			return;
-		}
-
-		glDeleteBuffers(BASE_UBO, VERTEX_UBO, PIXEL_UBO);
+	public void Dispose() {
+		(ShaderAPI as ShaderAPIVeldrid)?.ForgetShadow(this);
+		BaseUBO?.Dispose();
+		VertexUBO?.Dispose();
+		PixelUBO?.Dispose();
+		BaseUBO = VertexUBO = PixelUBO = null;
+		createdShaderObjects = false;
 	}
 
 	ShaderFlags Flags;
 	public ShaderFlags GetFlags() => Flags;
 	public void SetFlags(ShaderFlags flags) => Flags = flags;
 
-	public unsafe void Activate() {
-		CreateShaderObjects(); // Recreate UBO's, if we were lazy-loaded
-		ReuploadBuffers(); // Reupload UBO's, if needed
+	public void Activate() {
+		CreateShaderObjects();
+		ReuploadBuffers();
 
 		ComputeAggregateShadowState();
 
-		// Set GL states. We compare our last upload state to the current desired state and adjust if it differs.
 		ShaderAPI.SetBoardState(in State);
 
-		// Set VSH and PSH. Shader API can bind these whenever it needs to
-		((ShaderAPIGl46)ShaderAPI).SetCurrentShadow(this);
+		((ShaderAPIVeldrid)ShaderAPI).SetCurrentShadow(this);
 		ShaderAPI!.BindVertexShader(in VertexShader);
 		ShaderAPI!.BindPixelShader(in PixelShader);
 
-		// Bind UBO binding locations to their respective ranges in our UBO object
-		glBindBufferBase(GL_UNIFORM_BUFFER, (int)UniformBufferBindingLocation.SharedBaseShader, BASE_UBO);
-		glBindBufferBase(GL_UNIFORM_BUFFER, (int)UniformBufferBindingLocation.SharedVertexShader, VERTEX_UBO);
-		glBindBufferBase(GL_UNIFORM_BUFFER, (int)UniformBufferBindingLocation.SharedPixelShader, PIXEL_UBO);
-
-		// Activate per-shader-instance uniforms...
 		ActivateShaderUniforms();
-
-		// And now the shader shadow state is activated
 	}
 
-	private unsafe void ReuploadBuffers() {
-		SourceVertexSharedShadowState curVertex = ((ShaderAPIGl46)ShaderAPI).GetVertexSharedState();
+	private void ReuploadBuffers() {
+		GraphicsDevice? device = Device;
+		if (device == null || !createdShaderObjects)
+			return;
+
+		SourceVertexSharedShadowState curVertex = ((ShaderAPIVeldrid)ShaderAPI).GetVertexSharedState();
 		curVertex.NumBones = ShaderAPI.GetCurrentNumBones();
 		if (curVertex.NumBones != Vertex.NumBones || curVertex.LightCount != Vertex.LightCount || curVertex.LightEnabled != Vertex.LightEnabled)
 			needsBufferUpload = true;
@@ -172,16 +164,12 @@ public class ShadowStateGl46 : IShaderShadow
 		if (!needsBufferUpload)
 			return;
 
-		// Reupload UBO states.
 		Vertex = curVertex;
 
-		fixed (SourceSharedShadowState* pBase = &Base)
-		fixed (SourceVertexSharedShadowState* pVertex = &Vertex)
-		fixed (SourcePixelSharedShadowState* pPixel = &Pixel) {
-			glNamedBufferData(BASE_UBO, SizeAligned<SourceSharedShadowState>(), pBase, GL_DYNAMIC_DRAW);
-			glNamedBufferData(VERTEX_UBO, SizeAligned<SourceVertexSharedShadowState>(), pVertex, GL_DYNAMIC_DRAW);
-			glNamedBufferData(PIXEL_UBO, SizeAligned<SourcePixelSharedShadowState>(), pPixel, GL_DYNAMIC_DRAW);
-		}
+		ShaderAPIVeldrid api = (ShaderAPIVeldrid)ShaderAPI;
+		api.WriteUniforms(BaseUBO!, 0, ref Base);
+		api.WriteUniforms(VertexUBO!, 0, ref Vertex);
+		api.WriteUniforms(PixelUBO!, 0, ref Pixel);
 
 		needsBufferUpload = false;
 	}
@@ -257,7 +245,7 @@ public class ShadowStateGl46 : IShaderShadow
 	}
 
 	public void VertexShaderVertexFormat(VertexFormat format, int texCoordCount, Span<int> texCoordDimensions, int userDataSize) {
-		VertexFormat = ((ShaderAPIGl46)ShaderAPI).MeshMgr.ComputeVertexFormat(format | VertexFormat.BoneIndex | VertexFormat.BoneWeights2 | VertexFormat.UserData4, texCoordCount, texCoordDimensions, 0, userDataSize);
+		VertexFormat = ((ShaderAPIVeldrid)ShaderAPI).MeshMgr.ComputeVertexFormat(format | VertexFormat.BoneIndex | VertexFormat.BoneWeights2 | VertexFormat.UserData4, texCoordCount, texCoordDimensions, 0, userDataSize);
 	}
 
 	public GraphicsDriver GetDriver() => ShaderAPI.GetDriver();
@@ -301,6 +289,8 @@ public class ShadowStateGl46 : IShaderShadow
 			Warning($"Attempting to bind a texture to an invalid sampler {(int)sampler}!\n");
 		}
 	}
+
+	public bool IsTextureEnabled(Sampler sampler) => (int)sampler < samplerState.Length && samplerState[(int)sampler];
 
 	public void EnableTexGen(TextureStage stage, bool enable) {
 		throw new NotImplementedException();
@@ -348,9 +338,7 @@ public class ShadowStateGl46 : IShaderShadow
 	}
 
 	public void ComputeAggregateShadowState() {
-		// Alpha to coverage
 		if (State.AlphaToCoverage) {
-			// Only allow this to be enabled if blending is disabled and testing is enabled
 			if ((State.Blending == true) || (Pixel.IsAlphaTesting == 0))
 				State.AlphaToCoverage = false;
 		}
@@ -364,7 +352,7 @@ public class ShadowStateGl46 : IShaderShadow
 		throw new NotImplementedException();
 	}
 
-	public void DisableFogGammaCorrection(bool bDisable) {
+	public void DisableFogGammaCorrection(bool disable) {
 		throw new NotImplementedException();
 	}
 
@@ -373,8 +361,7 @@ public class ShadowStateGl46 : IShaderShadow
 	}
 
 	public void SetShadowDepthFiltering(Sampler stage) {
-		// throw new NotImplementedException();
-		// TODO!
+
 	}
 
 	public void BlendOp(ShaderBlendOp blendOp) {

@@ -6,7 +6,13 @@ in vec3 vs_T2;
 in float vs_T3;
 in vec4 vs_Color;
 
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 0) uniform texture2D basetexture_tex;
+layout(set = 1, binding = 1) uniform sampler basetexture_smp;
+#define basetexture sampler2D(basetexture_tex, basetexture_smp)
+#else
 layout(binding = 0) uniform sampler2D basetexture;
+#endif
 
 out vec4 fragColor;
 

@@ -41,15 +41,45 @@ out vec4 fragColor;
 
 #include "common_water_gl460.fs"
 
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 0) uniform texture2D RefractSampler_tex;
+layout(set = 1, binding = 1) uniform sampler RefractSampler_smp;
+#define RefractSampler sampler2D(RefractSampler_tex, RefractSampler_smp)
+#else
 layout(binding = 0) uniform sampler2D RefractSampler;
+#endif
 #if BASETEXTURE
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 2) uniform texture2D BaseTextureSampler_tex;
+layout(set = 1, binding = 3) uniform sampler BaseTextureSampler_smp;
+#define BaseTextureSampler sampler2D(BaseTextureSampler_tex, BaseTextureSampler_smp)
+#else
 layout(binding = 1) uniform sampler2D BaseTextureSampler;
 #endif
+#endif
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 4) uniform texture2D ReflectSampler_tex;
+layout(set = 1, binding = 5) uniform sampler ReflectSampler_smp;
+#define ReflectSampler sampler2D(ReflectSampler_tex, ReflectSampler_smp)
+#else
 layout(binding = 2) uniform sampler2D ReflectSampler;
+#endif
 #if BASETEXTURE
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 6) uniform texture2D LightmapSampler_tex;
+layout(set = 1, binding = 7) uniform sampler LightmapSampler_smp;
+#define LightmapSampler sampler2D(LightmapSampler_tex, LightmapSampler_smp)
+#else
 layout(binding = 3) uniform sampler2D LightmapSampler;
 #endif
+#endif
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 8) uniform texture2D NormalSampler_tex;
+layout(set = 1, binding = 9) uniform sampler NormalSampler_smp;
+#define NormalSampler sampler2D(NormalSampler_tex, NormalSampler_smp)
+#else
 layout(binding = 4) uniform sampler2D NormalSampler;
+#endif
 
 #define g_RefractTint			ps_const[1]
 #define g_ReflectTint			ps_const[4]
@@ -93,10 +123,10 @@ void main()
     DrawWater(params,
               // yay. . can't put sampler in a struct.
 #if BASETEXTURE
-              BaseTextureSampler,
-              LightmapSampler,
+              TEX2D_ARG(BaseTextureSampler),
+              TEX2D_ARG(LightmapSampler),
 #endif
-              NormalSampler, RefractSampler, ReflectSampler,
+              TEX2D_ARG(NormalSampler), TEX2D_ARG(RefractSampler), TEX2D_ARG(ReflectSampler),
               result, fogFactor);
 
     fragColor = FinalOutput(vec4(result.rgb, 1.0), fogFactor, PIXELFOGTYPE, TONEMAP_SCALE_NONE, (WRITE_DEPTH_TO_DESTALPHA != 0), vs_ProjPos.z);

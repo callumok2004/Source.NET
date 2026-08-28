@@ -42,12 +42,36 @@ out vec4 fragColor;
 #define g_CheapWaterDeltaRecip		g_CheapWaterParams.z
 #define g_CheapWaterStartDivDelta	g_CheapWaterParams.w
 
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 0) uniform textureCube EnvmapSampler_tex;
+layout(set = 1, binding = 1) uniform sampler EnvmapSampler_smp;
+#define EnvmapSampler samplerCube(EnvmapSampler_tex, EnvmapSampler_smp)
+#else
 layout(binding = 0) uniform samplerCube EnvmapSampler;
+#endif
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 2) uniform texture2D NormalMapSampler_tex;
+layout(set = 1, binding = 3) uniform sampler NormalMapSampler_smp;
+#define NormalMapSampler sampler2D(NormalMapSampler_tex, NormalMapSampler_smp)
+#else
 layout(binding = 1) uniform sampler2D NormalMapSampler;
+#endif
 #if REFRACTALPHA
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 4) uniform texture2D RefractSampler_tex;
+layout(set = 1, binding = 5) uniform sampler RefractSampler_smp;
+#define RefractSampler sampler2D(RefractSampler_tex, RefractSampler_smp)
+#else
 layout(binding = 2) uniform sampler2D RefractSampler;
 #endif
+#endif
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 12) uniform textureCube NormalizeSampler_tex;
+layout(set = 1, binding = 13) uniform sampler NormalizeSampler_smp;
+#define NormalizeSampler samplerCube(NormalizeSampler_tex, NormalizeSampler_smp)
+#else
 layout(binding = 6) uniform samplerCube NormalizeSampler;
+#endif
 
 void main()
 {
@@ -67,7 +91,7 @@ void main()
 #endif
 
 #else
-    vec3 vNormal = DecompressNormal(NormalMapSampler, vs_NormalMapTexCoord, NORMAL_DECODE_MODE).xyz;
+    vec3 vNormal = DecompressNormal(TEX2D_ARG(NormalMapSampler), vs_NormalMapTexCoord, NORMAL_DECODE_MODE).xyz;
 #endif
 
     vec3 worldSpaceNormal = vs_TangentSpaceTranspose * vNormal;
@@ -84,7 +108,7 @@ void main()
     }
     else
     {
-        worldSpaceEye = NormalizeWithCubemap(NormalizeSampler, vs_WorldVertToEyeVector);
+        worldSpaceEye = NormalizeWithCubemap(TEXCUBE_ARG(NormalizeSampler), vs_WorldVertToEyeVector);
     }
 
     vec3 reflectVect = CalcReflectionVectorUnnormalized(worldSpaceNormal, worldSpaceEye);

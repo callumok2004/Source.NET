@@ -13,7 +13,13 @@ layout(std140, binding = 6) uniform source_ps_constants {
 
 #define g_ShadowColor ps_const[1]
 
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 0) uniform texture2D basetexture_tex;
+layout(set = 1, binding = 1) uniform sampler basetexture_smp;
+#define basetexture sampler2D(basetexture_tex, basetexture_smp)
+#else
 layout(binding = 0) uniform sampler2D basetexture;
+#endif
 
 out vec4 fragColor;
 

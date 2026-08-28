@@ -26,6 +26,7 @@ using Source.MaterialSystem;
 using Source.Physics;
 using Source.SDLManager;
 using Source.ShaderAPI.Gl46;
+using Source.ShaderAPI.Veldrid;
 using Source.SoundEmitterSystem;
 using Source.StdShader.Gl46;
 using Source.StudioRender;
@@ -54,7 +55,7 @@ public class Bootloader : IDisposable
 	public void Boot() {
 		bool needsRestart;
 		do {
-			engineAPI = new EngineBuilder(commandLine)
+			EngineBuilder builder = new EngineBuilder(commandLine)
 				// These assemblies have no reference to them, so they must be manually loaded.
 				.WithAssembly("Source.GUI")
 				.WithAssembly("Source.GUI.Controls")
@@ -72,8 +73,18 @@ public class Bootloader : IDisposable
 				// Physics
 				.WithComponent<IPhysics, PhysicsInterface>()
 				// Rendering abstraction
-				.WithFullMaterialSystem()
-				.WithComponent<IShaderAPI, ShaderAPIGl46>()
+				.WithFullMaterialSystem();
+
+			GraphicsSelection.Picker = SDL3_GraphicsPrompt.Ask;
+			GraphicsSelection.Resolve(allowPrompt: !isTextMode);
+			Msg($"Rendering backend: {GraphicsSelection.Selected}\n");
+
+			if (GraphicsSelection.IsVeldrid)
+				builder.WithComponent<IShaderAPI, ShaderAPIVeldrid>();
+			else
+				builder.WithComponent<IShaderAPI, ShaderAPIGl46>();
+
+			engineAPI = builder
 				.WithComponent<ISoundEmitterSystemBase, SoundEmitterSystemBase>()
 				// Datacache impl
 				.WithComponent<IDataCache, DataCache.DataCache>()

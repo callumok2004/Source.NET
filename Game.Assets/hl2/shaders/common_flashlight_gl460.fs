@@ -3,7 +3,7 @@
 
 #include "common_gl460.fs"
 
-float DoShadowPoisson16Sample(sampler2DShadow DepthSampler, sampler2D DepthSamplerRaw, sampler2D RandomRotationSampler, vec3 vProjCoords, vec2 vScreenPos, vec4 vShadowTweaks, bool bNvidiaHardwarePCF, bool bFetch4)
+float DoShadowPoisson16Sample(TEX2DSHADOW_PARAM(DepthSampler), TEX2D_PARAM(DepthSamplerRaw), TEX2D_PARAM(RandomRotationSampler), vec3 vProjCoords, vec2 vScreenPos, vec4 vShadowTweaks, bool bNvidiaHardwarePCF, bool bFetch4)
 {
     vec2 vPoissonOffset[8] = vec2[8]( vec2(  0.3475,  0.0042 ),
                                       vec2(  0.8806,  0.3430 ),
@@ -24,7 +24,7 @@ float DoShadowPoisson16Sample(sampler2DShadow DepthSampler, sampler2D DepthSampl
 
     // 2D Rotation Matrix setup
     vec3 RMatTop = vec3(0.0), RMatBottom = vec3(0.0);
-    RMatTop.xy = texture(RandomRotationSampler, cFlashlightScreenScale.xy * (vScreenPos * 0.5 + 0.5) + vNoiseOffset).xy * 2.0 - 1.0;
+    RMatTop.xy = texture(TEX2D(RandomRotationSampler), cFlashlightScreenScale.xy * (vScreenPos * 0.5 + 0.5) + vNoiseOffset).xy * 2.0 - 1.0;
     RMatBottom.xy = vec2(-1.0, 1.0) * RMatTop.yx;	// 2x2 rotation matrix in 4-tuple
 
     RMatTop *= flScaleOverMapSize;				// Scale up kernel while accounting for texture resolution
@@ -41,7 +41,7 @@ float DoShadowPoisson16Sample(sampler2DShadow DepthSampler, sampler2D DepthSampl
         {
             rotOffset.x = dot(RMatTop.xy,    vPoissonOffset[i].xy) + RMatTop.z;
             rotOffset.y = dot(RMatBottom.xy, vPoissonOffset[i].xy) + RMatBottom.z;
-            vLightDepths[i & 3] += texture(DepthSampler, vec3(rotOffset, objDepth));
+            vLightDepths[i & 3] += texture(TEX2DSHADOW(DepthSampler), vec3(rotOffset, objDepth));
         }
 
         fResult = dot(vLightDepths, vec4(0.25, 0.25, 0.25, 0.25));
@@ -52,7 +52,7 @@ float DoShadowPoisson16Sample(sampler2DShadow DepthSampler, sampler2D DepthSampl
         {
             rotOffset.x = dot(RMatTop.xy,    vPoissonOffset[i].xy) + RMatTop.z;
             rotOffset.y = dot(RMatBottom.xy, vPoissonOffset[i].xy) + RMatBottom.z;
-            vLightDepths = texture(DepthSamplerRaw, rotOffset.xy);
+            vLightDepths = texture(TEX2D(DepthSamplerRaw), rotOffset.xy);
             accum += vec4(greaterThan(vLightDepths, vec4(objDepth)));
         }
 
@@ -64,19 +64,19 @@ float DoShadowPoisson16Sample(sampler2DShadow DepthSampler, sampler2D DepthSampl
         {
             rotOffset.x = dot(RMatTop.xy,    vPoissonOffset[4 * i + 0].xy) + RMatTop.z;
             rotOffset.y = dot(RMatBottom.xy, vPoissonOffset[4 * i + 0].xy) + RMatBottom.z;
-            vLightDepths.x = texture(DepthSamplerRaw, rotOffset.xy).x;
+            vLightDepths.x = texture(TEX2D(DepthSamplerRaw), rotOffset.xy).x;
 
             rotOffset.x = dot(RMatTop.xy,    vPoissonOffset[4 * i + 1].xy) + RMatTop.z;
             rotOffset.y = dot(RMatBottom.xy, vPoissonOffset[4 * i + 1].xy) + RMatBottom.z;
-            vLightDepths.y = texture(DepthSamplerRaw, rotOffset.xy).x;
+            vLightDepths.y = texture(TEX2D(DepthSamplerRaw), rotOffset.xy).x;
 
             rotOffset.x = dot(RMatTop.xy,    vPoissonOffset[4 * i + 2].xy) + RMatTop.z;
             rotOffset.y = dot(RMatBottom.xy, vPoissonOffset[4 * i + 2].xy) + RMatBottom.z;
-            vLightDepths.z = texture(DepthSamplerRaw, rotOffset.xy).x;
+            vLightDepths.z = texture(TEX2D(DepthSamplerRaw), rotOffset.xy).x;
 
             rotOffset.x = dot(RMatTop.xy,    vPoissonOffset[4 * i + 3].xy) + RMatTop.z;
             rotOffset.y = dot(RMatBottom.xy, vPoissonOffset[4 * i + 3].xy) + RMatBottom.z;
-            vLightDepths.w = texture(DepthSamplerRaw, rotOffset.xy).x;
+            vLightDepths.w = texture(TEX2D(DepthSamplerRaw), rotOffset.xy).x;
 
             accum += vec4(greaterThan(vLightDepths, vec4(objDepth)));
         }
@@ -87,22 +87,22 @@ float DoShadowPoisson16Sample(sampler2DShadow DepthSampler, sampler2D DepthSampl
     return fResult;
 }
 
-float DoFlashlightShadow(sampler2DShadow DepthSampler, sampler2D DepthSamplerRaw, sampler2D RandomRotationSampler, vec3 vProjCoords, vec2 vScreenPos, int nShadowLevel, vec4 vShadowTweaks, bool bAllowHighQuality)
+float DoFlashlightShadow(TEX2DSHADOW_PARAM(DepthSampler), TEX2D_PARAM(DepthSamplerRaw), TEX2D_PARAM(RandomRotationSampler), vec3 vProjCoords, vec2 vScreenPos, int nShadowLevel, vec4 vShadowTweaks, bool bAllowHighQuality)
 {
     float flShadow = 1.0;
 
     if (nShadowLevel == NVIDIA_PCF_POISSON)
-        flShadow = DoShadowPoisson16Sample(DepthSampler, DepthSamplerRaw, RandomRotationSampler, vProjCoords, vScreenPos, vShadowTweaks, true, false);
+        flShadow = DoShadowPoisson16Sample(TEX2DSHADOW_ARG(DepthSampler), TEX2D_ARG(DepthSamplerRaw), TEX2D_ARG(RandomRotationSampler), vProjCoords, vScreenPos, vShadowTweaks, true, false);
     else if (nShadowLevel == ATI_NOPCF)
-        flShadow = DoShadowPoisson16Sample(DepthSampler, DepthSamplerRaw, RandomRotationSampler, vProjCoords, vScreenPos, vShadowTweaks, false, false);
+        flShadow = DoShadowPoisson16Sample(TEX2DSHADOW_ARG(DepthSampler), TEX2D_ARG(DepthSamplerRaw), TEX2D_ARG(RandomRotationSampler), vProjCoords, vScreenPos, vShadowTweaks, false, false);
     else if (nShadowLevel == ATI_NO_PCF_FETCH4)
-        flShadow = DoShadowPoisson16Sample(DepthSampler, DepthSamplerRaw, RandomRotationSampler, vProjCoords, vScreenPos, vShadowTweaks, false, true);
+        flShadow = DoShadowPoisson16Sample(TEX2DSHADOW_ARG(DepthSampler), TEX2D_ARG(DepthSamplerRaw), TEX2D_ARG(RandomRotationSampler), vProjCoords, vScreenPos, vShadowTweaks, false, true);
 
     return flShadow;
 }
 
 vec3 SpecularLight(vec3 vWorldNormal, vec3 vLightDir, float fSpecularExponent,
-                   vec3 vEyeDir, bool bDoSpecularWarp, sampler2D specularWarpSampler, float fFresnel)
+                   vec3 vEyeDir, bool bDoSpecularWarp, TEX2D_PARAM(specularWarpSampler), float fFresnel)
 {
     vec3 result = vec3(0.0, 0.0, 0.0);
 
@@ -112,21 +112,21 @@ vec3 SpecularLight(vec3 vWorldNormal, vec3 vLightDir, float fSpecularExponent,
 
     // Optionally warp as function of scalar specular and fresnel
     if (bDoSpecularWarp)
-        vSpecular *= texture(specularWarpSampler, vec2(vSpecular.x, fFresnel)).xyz; // Sample at { (L.R)^k, fresnel }
+        vSpecular *= texture(TEX2D(specularWarpSampler), vec2(vSpecular.x, fFresnel)).xyz; // Sample at { (L.R)^k, fresnel }
 
     return vSpecular;
 }
 
 void DoSpecularFlashlight(vec3 flashlightPos, vec3 worldPos, vec4 flashlightSpacePosition, vec3 worldNormal,
-                    vec3 attenuationFactors, float farZ, sampler2D FlashlightSampler, sampler2DShadow FlashlightDepthSampler, sampler2D FlashlightDepthSamplerRaw, sampler2D RandomRotationSampler,
+                    vec3 attenuationFactors, float farZ, TEX2D_PARAM(FlashlightSampler), TEX2DSHADOW_PARAM(FlashlightDepthSampler), TEX2D_PARAM(FlashlightDepthSamplerRaw), TEX2D_PARAM(RandomRotationSampler),
                     int nShadowLevel, bool bDoShadows, bool bAllowHighQuality, vec2 vScreenPos, float fSpecularExponent, vec3 vEyeDir,
-                    bool bDoSpecularWarp, sampler2D specularWarpSampler, float fFresnel, vec4 vShadowTweaks,
+                    bool bDoSpecularWarp, TEX2D_PARAM(specularWarpSampler), float fFresnel, vec4 vShadowTweaks,
 
                     // Outputs of this shader...separate shadowed diffuse and specular from the flashlight
                     out vec3 diffuseLighting, out vec3 specularLighting)
 {
     vec3 vProjCoords = flashlightSpacePosition.xyz / flashlightSpacePosition.w;
-    vec3 flashlightColor = texture(FlashlightSampler, vProjCoords.xy).xyz;
+    vec3 flashlightColor = texture(TEX2D(FlashlightSampler), vProjCoords.xy).xyz;
 
     flashlightColor *= cFlashlightColor.xyz;						// Flashlight color
 
@@ -143,7 +143,7 @@ void DoSpecularFlashlight(vec3 flashlightPos, vec3 worldPos, vec4 flashlightSpac
     // Shadowing and coloring terms
     if (bDoShadows)
     {
-        float flShadow = DoFlashlightShadow(FlashlightDepthSampler, FlashlightDepthSamplerRaw, RandomRotationSampler, vProjCoords, vScreenPos, nShadowLevel, vShadowTweaks, bAllowHighQuality);
+        float flShadow = DoFlashlightShadow(TEX2DSHADOW_ARG(FlashlightDepthSampler), TEX2D_ARG(FlashlightDepthSamplerRaw), TEX2D_ARG(RandomRotationSampler), vProjCoords, vScreenPos, nShadowLevel, vShadowTweaks, bAllowHighQuality);
         float flAttenuated = mix(flShadow, 1.0, vShadowTweaks.y);			// Blend between fully attenuated and not attenuated
         flShadow = clamp(mix(flAttenuated, flShadow, fAtten), 0.0, 1.0);	// Blend between shadow and above, according to light attenuation
         flashlightColor *= flShadow;										// Shadow term
@@ -155,17 +155,17 @@ void DoSpecularFlashlight(vec3 flashlightPos, vec3 worldPos, vec4 flashlightSpac
     diffuseLighting *= endFalloffFactor;
 
     // Specular term (masked by diffuse)
-    specularLighting = diffuseLighting * SpecularLight(worldNormal, L, fSpecularExponent, vEyeDir, bDoSpecularWarp, specularWarpSampler, fFresnel);
+    specularLighting = diffuseLighting * SpecularLight(worldNormal, L, fSpecularExponent, vEyeDir, bDoSpecularWarp, TEX2D_ARG(specularWarpSampler), fFresnel);
 }
 
 // Diffuse only version
 vec3 DoFlashlight(vec3 flashlightPos, vec3 worldPos, vec4 flashlightSpacePosition, vec3 worldNormal,
-                  vec3 attenuationFactors, float farZ, sampler2D FlashlightSampler, sampler2DShadow FlashlightDepthSampler, sampler2D FlashlightDepthSamplerRaw,
-                  sampler2D RandomRotationSampler, int nShadowLevel, bool bDoShadows, bool bAllowHighQuality,
+                  vec3 attenuationFactors, float farZ, TEX2D_PARAM(FlashlightSampler), TEX2DSHADOW_PARAM(FlashlightDepthSampler), TEX2D_PARAM(FlashlightDepthSamplerRaw),
+                  TEX2D_PARAM(RandomRotationSampler), int nShadowLevel, bool bDoShadows, bool bAllowHighQuality,
                   vec2 vScreenPos, bool bClip, vec4 vShadowTweaks, bool bHasNormal)
 {
     vec3 vProjCoords = flashlightSpacePosition.xyz / flashlightSpacePosition.w;
-    vec3 flashlightColor = texture(FlashlightSampler, vProjCoords.xy).xyz;
+    vec3 flashlightColor = texture(TEX2D(FlashlightSampler), vProjCoords.xy).xyz;
 
     flashlightColor *= cFlashlightColor.xyz;						// Flashlight color
 
@@ -182,7 +182,7 @@ vec3 DoFlashlight(vec3 flashlightPos, vec3 worldPos, vec4 flashlightSpacePositio
     // Shadowing and coloring terms
     if (bDoShadows)
     {
-        float flShadow = DoFlashlightShadow(FlashlightDepthSampler, FlashlightDepthSamplerRaw, RandomRotationSampler, vProjCoords, vScreenPos, nShadowLevel, vShadowTweaks, bAllowHighQuality);
+        float flShadow = DoFlashlightShadow(TEX2DSHADOW_ARG(FlashlightDepthSampler), TEX2D_ARG(FlashlightDepthSamplerRaw), TEX2D_ARG(RandomRotationSampler), vProjCoords, vScreenPos, nShadowLevel, vShadowTweaks, bAllowHighQuality);
         float flAttenuated = mix(flShadow, 1.0, vShadowTweaks.y);			// Blend between fully attenuated and not attenuated
         flShadow = clamp(mix(flAttenuated, flShadow, fAtten), 0.0, 1.0);	// Blend between shadow and above, according to light attenuation
         flashlightColor *= flShadow;										// Shadow term

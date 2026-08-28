@@ -60,7 +60,7 @@ vec3 AmbientLight(vec3 worldNormal, vec3 cAmbientCube[6])
 //-----------------------------------------------------------------------------
 vec3 DiffuseTerm(bool bHalfLambert, vec3 worldNormal, vec3 lightDir,
                  bool bDoAmbientOcclusion, float fAmbientOcclusion,
-                 bool bDoLightingWarp, sampler2D lightWarpSampler)
+                 bool bDoLightingWarp, TEX2D_PARAM(lightWarpSampler))
 {
     float fResult;
 
@@ -89,7 +89,7 @@ vec3 DiffuseTerm(bool bHalfLambert, vec3 worldNormal, vec3 lightDir,
     vec3 fOut = vec3(fResult, fResult, fResult);
     if (bDoLightingWarp)
     {
-        fOut = 2.0 * texture(lightWarpSampler, vec2(fResult, 0.0)).xyz;
+        fOut = 2.0 * texture(TEX2D(lightWarpSampler), vec2(fResult, 0.0)).xyz;
     }
 
     return fOut;
@@ -98,10 +98,10 @@ vec3 DiffuseTerm(bool bHalfLambert, vec3 worldNormal, vec3 lightDir,
 vec3 PixelShaderDoGeneralDiffuseLight(float fAtten, vec3 worldPos, vec3 worldNormal,
                                       vec3 vPosition, vec3 vColor, bool bHalfLambert,
                                       bool bDoAmbientOcclusion, float fAmbientOcclusion,
-                                      bool bDoLightingWarp, sampler2D lightWarpSampler)
+                                      bool bDoLightingWarp, TEX2D_PARAM(lightWarpSampler))
 {
     vec3 lightDir = normalize(vPosition - worldPos);
-    return vColor * fAtten * DiffuseTerm(bHalfLambert, worldNormal, lightDir, bDoAmbientOcclusion, fAmbientOcclusion, bDoLightingWarp, lightWarpSampler);
+    return vColor * fAtten * DiffuseTerm(bHalfLambert, worldNormal, lightDir, bDoAmbientOcclusion, fAmbientOcclusion, bDoLightingWarp, TEX2D_ARG(lightWarpSampler));
 }
 
 vec3 PixelShaderGetLightVector(vec3 worldPos, PixelShaderLightInfo cLightInfo[3], int nLightIndex)
@@ -134,7 +134,7 @@ vec3 PixelShaderGetLightColor(PixelShaderLightInfo cLightInfo[3], int nLightInde
 
 void SpecularAndRimTerms(vec3 vWorldNormal, vec3 vLightDir, float fSpecularExponent,
                          vec3 vEyeDir, bool bDoAmbientOcclusion, float fAmbientOcclusion,
-                         bool bDoSpecularWarp, sampler2D specularWarpSampler, float fFresnel,
+                         bool bDoSpecularWarp, TEX2D_PARAM(specularWarpSampler), float fFresnel,
                          vec3 color, bool bDoRimLighting, float fRimExponent,
 
                          // Outputs
@@ -148,7 +148,7 @@ void SpecularAndRimTerms(vec3 vWorldNormal, vec3 vLightDir, float fSpecularExpon
 
     // Optionally warp as function of scalar specular and fresnel
     if (bDoSpecularWarp)
-        specularLighting *= texture(specularWarpSampler, vec2(specularLighting.x, fFresnel)).xyz; // Sample at { (L.R)^k, fresnel }
+        specularLighting *= texture(TEX2D(specularWarpSampler), vec2(specularLighting.x, fFresnel)).xyz; // Sample at { (L.R)^k, fresnel }
 
     specularLighting *= clamp(dot(vWorldNormal, vLightDir), 0.0, 1.0);		// Mask with N.L
     specularLighting *= color;												// Modulate with light color
@@ -203,7 +203,7 @@ float Fresnel(vec3 vNormal, vec3 vEyeDir, vec3 vRanges)
 void PixelShaderDoSpecularLight(vec3 vWorldPos, vec3 vWorldNormal, float fSpecularExponent, vec3 vEyeDir,
                                 float fAtten, vec3 vLightColor, vec3 vLightDir,
                                 bool bDoAmbientOcclusion, float fAmbientOcclusion,
-                                bool bDoSpecularWarp, sampler2D specularWarpSampler, float fFresnel,
+                                bool bDoSpecularWarp, TEX2D_PARAM(specularWarpSampler), float fFresnel,
                                 bool bDoRimLighting, float fRimExponent,
 
                                 // Outputs
@@ -212,7 +212,7 @@ void PixelShaderDoSpecularLight(vec3 vWorldPos, vec3 vWorldNormal, float fSpecul
     // Compute Specular and rim terms
     SpecularAndRimTerms(vWorldNormal, vLightDir, fSpecularExponent,
                         vEyeDir, bDoAmbientOcclusion, fAmbientOcclusion,
-                        bDoSpecularWarp, specularWarpSampler, fFresnel, vLightColor * fAtten,
+                        bDoSpecularWarp, TEX2D_ARG(specularWarpSampler), fFresnel, vLightColor * fAtten,
                         bDoRimLighting, fRimExponent, specularLighting, rimLighting);
 }
 
@@ -221,7 +221,7 @@ vec3 PixelShaderDoLightingLinear(vec3 worldPos, vec3 worldNormal,
                                  bool bAmbientLight, vec4 lightAtten, vec3 cAmbientCube[6],
                                  int nNumLights, PixelShaderLightInfo cLightInfo[3],
                                  bool bHalfLambert, bool bDoAmbientOcclusion, float fAmbientOcclusion,
-                                 bool bDoLightingWarp, sampler2D lightWarpSampler)
+                                 bool bDoLightingWarp, TEX2D_PARAM(lightWarpSampler))
 {
     vec3 linearColor = vec3(0.0);
 
@@ -248,19 +248,19 @@ vec3 PixelShaderDoLightingLinear(vec3 worldPos, vec3 worldNormal,
         linearColor += PixelShaderDoGeneralDiffuseLight(lightAtten.x, worldPos, worldNormal,
                                                         cLightInfo[0].pos.xyz, cLightInfo[0].color.xyz, bHalfLambert,
                                                         bDoAmbientOcclusion, fAmbientOcclusion,
-                                                        bDoLightingWarp, lightWarpSampler);
+                                                        bDoLightingWarp, TEX2D_ARG(lightWarpSampler));
         if (nNumLights > 1)
         {
             linearColor += PixelShaderDoGeneralDiffuseLight(lightAtten.y, worldPos, worldNormal,
                                                             cLightInfo[1].pos.xyz, cLightInfo[1].color.xyz, bHalfLambert,
                                                             bDoAmbientOcclusion, fAmbientOcclusion,
-                                                            bDoLightingWarp, lightWarpSampler);
+                                                            bDoLightingWarp, TEX2D_ARG(lightWarpSampler));
             if (nNumLights > 2)
             {
                 linearColor += PixelShaderDoGeneralDiffuseLight(lightAtten.z, worldPos, worldNormal,
                                                                 cLightInfo[2].pos.xyz, cLightInfo[2].color.xyz, bHalfLambert,
                                                                 bDoAmbientOcclusion, fAmbientOcclusion,
-                                                                bDoLightingWarp, lightWarpSampler);
+                                                                bDoLightingWarp, TEX2D_ARG(lightWarpSampler));
                 if (nNumLights > 3)
                 {
                     // Unpack the 4th light's data from tight constant packing
@@ -269,7 +269,7 @@ vec3 PixelShaderDoLightingLinear(vec3 worldPos, vec3 worldNormal,
                     linearColor += PixelShaderDoGeneralDiffuseLight(lightAtten.w, worldPos, worldNormal,
                                                                     vLight3Pos, vLight3Color, bHalfLambert,
                                                                     bDoAmbientOcclusion, fAmbientOcclusion,
-                                                                    bDoLightingWarp, lightWarpSampler);
+                                                                    bDoLightingWarp, TEX2D_ARG(lightWarpSampler));
                 }
             }
         }
@@ -281,7 +281,7 @@ vec3 PixelShaderDoLightingLinear(vec3 worldPos, vec3 worldNormal,
 void PixelShaderDoSpecularLighting(vec3 worldPos, vec3 worldNormal, float fSpecularExponent, vec3 vEyeDir,
                                    vec4 lightAtten, int nNumLights, PixelShaderLightInfo cLightInfo[3],
                                    bool bDoAmbientOcclusion, float fAmbientOcclusion,
-                                   bool bDoSpecularWarp, sampler2D specularWarpSampler, float fFresnel,
+                                   bool bDoSpecularWarp, TEX2D_PARAM(specularWarpSampler), float fFresnel,
                                    bool bDoRimLighting, float fRimExponent,
 
                                    // Outputs
@@ -296,7 +296,7 @@ void PixelShaderDoSpecularLighting(vec3 worldPos, vec3 worldNormal, float fSpecu
                                    lightAtten.x, PixelShaderGetLightColor(cLightInfo, 0),
                                    PixelShaderGetLightVector(worldPos, cLightInfo, 0),
                                    bDoAmbientOcclusion, fAmbientOcclusion,
-                                   bDoSpecularWarp, specularWarpSampler, fFresnel,
+                                   bDoSpecularWarp, TEX2D_ARG(specularWarpSampler), fFresnel,
                                    bDoRimLighting, fRimExponent,
                                    localSpecularTerm, localRimTerm);
 
@@ -310,7 +310,7 @@ void PixelShaderDoSpecularLighting(vec3 worldPos, vec3 worldNormal, float fSpecu
                                    lightAtten.y, PixelShaderGetLightColor(cLightInfo, 1),
                                    PixelShaderGetLightVector(worldPos, cLightInfo, 1),
                                    bDoAmbientOcclusion, fAmbientOcclusion,
-                                   bDoSpecularWarp, specularWarpSampler, fFresnel,
+                                   bDoSpecularWarp, TEX2D_ARG(specularWarpSampler), fFresnel,
                                    bDoRimLighting, fRimExponent,
                                    localSpecularTerm, localRimTerm);
 
@@ -324,7 +324,7 @@ void PixelShaderDoSpecularLighting(vec3 worldPos, vec3 worldNormal, float fSpecu
                                    lightAtten.z, PixelShaderGetLightColor(cLightInfo, 2),
                                    PixelShaderGetLightVector(worldPos, cLightInfo, 2),
                                    bDoAmbientOcclusion, fAmbientOcclusion,
-                                   bDoSpecularWarp, specularWarpSampler, fFresnel,
+                                   bDoSpecularWarp, TEX2D_ARG(specularWarpSampler), fFresnel,
                                    bDoRimLighting, fRimExponent,
                                    localSpecularTerm, localRimTerm);
 
@@ -338,7 +338,7 @@ void PixelShaderDoSpecularLighting(vec3 worldPos, vec3 worldNormal, float fSpecu
                                    lightAtten.w, PixelShaderGetLightColor(cLightInfo, 3),
                                    PixelShaderGetLightVector(worldPos, cLightInfo, 3),
                                    bDoAmbientOcclusion, fAmbientOcclusion,
-                                   bDoSpecularWarp, specularWarpSampler, fFresnel,
+                                   bDoSpecularWarp, TEX2D_ARG(specularWarpSampler), fFresnel,
                                    bDoRimLighting, fRimExponent,
                                    localSpecularTerm, localRimTerm);
 
@@ -363,13 +363,13 @@ vec3 PixelShaderDoLighting(vec3 worldPos, vec3 worldNormal,
 
                            // New optional/experimental parameters
                            bool bDoAmbientOcclusion, float fAmbientOcclusion,
-                           bool bDoLightingWarp, sampler2D lightWarpSampler)
+                           bool bDoLightingWarp, TEX2D_PARAM(lightWarpSampler))
 {
     vec3 linearColor = PixelShaderDoLightingLinear(worldPos, worldNormal, staticLightingColor,
                                                    bStaticLight, bAmbientLight, lightAtten,
                                                    cAmbientCube, nNumLights, cLightInfo, bHalfLambert,
                                                    bDoAmbientOcclusion, fAmbientOcclusion,
-                                                   bDoLightingWarp, lightWarpSampler);
+                                                   bDoLightingWarp, TEX2D_ARG(lightWarpSampler));
 
     return linearColor;
 }

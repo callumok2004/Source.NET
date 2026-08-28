@@ -64,29 +64,125 @@ out vec4 fragColor;
 #define g_fTintReplacementControl		g_ShaderControls.z
 #define g_fInvertPhongMask				g_ShaderControls.w
 
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 0) uniform texture2D BaseTextureSampler_tex;
+layout(set = 1, binding = 1) uniform sampler BaseTextureSampler_smp;
+#define BaseTextureSampler sampler2D(BaseTextureSampler_tex, BaseTextureSampler_smp)
+#else
 layout(binding = 0) uniform sampler2D BaseTextureSampler;		// Base map, selfillum in alpha
+#endif
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 2) uniform texture2D SpecularWarpSampler_tex;
+layout(set = 1, binding = 3) uniform sampler SpecularWarpSampler_smp;
+#define SpecularWarpSampler sampler2D(SpecularWarpSampler_tex, SpecularWarpSampler_smp)
+#else
 layout(binding = 1) uniform sampler2D SpecularWarpSampler;		// Specular warp sampler (for iridescence etc)
+#endif
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 4) uniform texture2D DiffuseWarpSampler_tex;
+layout(set = 1, binding = 5) uniform sampler DiffuseWarpSampler_smp;
+#define DiffuseWarpSampler sampler2D(DiffuseWarpSampler_tex, DiffuseWarpSampler_smp)
+#else
 layout(binding = 2) uniform sampler2D DiffuseWarpSampler;		// Lighting warp sampler (1D texture for diffuse lighting modification)
+#endif
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 6) uniform texture2D NormalMapSampler_tex;
+layout(set = 1, binding = 7) uniform sampler NormalMapSampler_smp;
+#define NormalMapSampler sampler2D(NormalMapSampler_tex, NormalMapSampler_smp)
+#else
 layout(binding = 3) uniform sampler2D NormalMapSampler;			// Normal map, specular mask in alpha
+#endif
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 8) uniform texture2D ShadowDepthSampler_tex;
+layout(set = 1, binding = 9) uniform sampler ShadowDepthSampler_smp;
+#define ShadowDepthSampler sampler2DShadow(ShadowDepthSampler_tex, ShadowDepthSampler_smp)
+#else
 layout(binding = 4) uniform sampler2DShadow ShadowDepthSampler;	// Flashlight shadow depth map sampler
+#endif
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 30) uniform texture2D ShadowDepthSamplerRaw_tex;
+layout(set = 1, binding = 31) uniform sampler ShadowDepthSamplerRaw_smp;
+#define ShadowDepthSamplerRaw sampler2D(ShadowDepthSamplerRaw_tex, ShadowDepthSamplerRaw_smp)
+#else
 layout(binding = 4) uniform sampler2D ShadowDepthSamplerRaw;
+#endif
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 10) uniform texture2D NormalizeRandRotSampler_tex;
+layout(set = 1, binding = 11) uniform sampler NormalizeRandRotSampler_smp;
+#define NormalizeRandRotSampler sampler2D(NormalizeRandRotSampler_tex, NormalizeRandRotSampler_smp)
+#else
 layout(binding = 5) uniform sampler2D NormalizeRandRotSampler;	// Normalization / RandomRotation samplers
+#endif
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 12) uniform texture2D FlashlightSampler_tex;
+layout(set = 1, binding = 13) uniform sampler FlashlightSampler_smp;
+#define FlashlightSampler sampler2D(FlashlightSampler_tex, FlashlightSampler_smp)
+#else
 layout(binding = 6) uniform sampler2D FlashlightSampler;		// Flashlight cookie
+#endif
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 14) uniform texture2D SpecExponentSampler_tex;
+layout(set = 1, binding = 15) uniform sampler SpecExponentSampler_smp;
+#define SpecExponentSampler sampler2D(SpecExponentSampler_tex, SpecExponentSampler_smp)
+#else
 layout(binding = 7) uniform sampler2D SpecExponentSampler;		// Specular exponent map
+#endif
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 16) uniform textureCube EnvmapSampler_tex;
+layout(set = 1, binding = 17) uniform sampler EnvmapSampler_smp;
+#define EnvmapSampler samplerCube(EnvmapSampler_tex, EnvmapSampler_smp)
+#else
 layout(binding = 8) uniform samplerCube EnvmapSampler;			// Cubic environment map
+#endif
 
 #if WRINKLEMAP
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 18) uniform texture2D WrinkleSampler_tex;
+layout(set = 1, binding = 19) uniform sampler WrinkleSampler_smp;
+#define WrinkleSampler sampler2D(WrinkleSampler_tex, WrinkleSampler_smp)
+#else
 layout(binding = 9) uniform sampler2D WrinkleSampler;			// Compression base
+#endif
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 20) uniform texture2D StretchSampler_tex;
+layout(set = 1, binding = 21) uniform sampler StretchSampler_smp;
+#define StretchSampler sampler2D(StretchSampler_tex, StretchSampler_smp)
+#else
 layout(binding = 10) uniform sampler2D StretchSampler;			// Expansion base
+#endif
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 22) uniform texture2D NormalWrinkleSampler_tex;
+layout(set = 1, binding = 23) uniform sampler NormalWrinkleSampler_smp;
+#define NormalWrinkleSampler sampler2D(NormalWrinkleSampler_tex, NormalWrinkleSampler_smp)
+#else
 layout(binding = 11) uniform sampler2D NormalWrinkleSampler;	// Compression base
+#endif
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 24) uniform texture2D NormalStretchSampler_tex;
+layout(set = 1, binding = 25) uniform sampler NormalStretchSampler_smp;
+#define NormalStretchSampler sampler2D(NormalStretchSampler_tex, NormalStretchSampler_smp)
+#else
 layout(binding = 12) uniform sampler2D NormalStretchSampler;	// Expansion base
+#endif
 #endif
 
 #if DETAILTEXTURE
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 26) uniform texture2D DetailSampler_tex;
+layout(set = 1, binding = 27) uniform sampler DetailSampler_smp;
+#define DetailSampler sampler2D(DetailSampler_tex, DetailSampler_smp)
+#else
 layout(binding = 13) uniform sampler2D DetailSampler;			// detail texture
 #endif
+#endif
 
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 28) uniform texture2D SelfIllumMaskSampler_tex;
+layout(set = 1, binding = 29) uniform sampler SelfIllumMaskSampler_smp;
+#define SelfIllumMaskSampler sampler2D(SelfIllumMaskSampler_tex, SelfIllumMaskSampler_smp)
+#else
 layout(binding = 14) uniform sampler2D SelfIllumMaskSampler;	// selfillummask
+#endif
 
 void main()
 {
@@ -182,7 +278,7 @@ void main()
 
             // These parameters aren't passed by generic shaders:
             false, 1.0,
-            bDoDiffuseWarp, DiffuseWarpSampler);
+            bDoDiffuseWarp, TEX2D_ARG(DiffuseWarpSampler));
 
         if (bCubemap)
         {
@@ -235,7 +331,7 @@ void main()
         PixelShaderDoSpecularLighting(vWorldPos, worldSpaceNormal,
             fSpecExp, vEyeDir, vLightAtten,
             nNumLights, cLightInfo, false, 1.0, bDoSpecularWarp,
-            SpecularWarpSampler, fFresnelRanges, bDoRimLighting, g_RimExponent,
+            TEX2D_ARG(SpecularWarpSampler), fFresnelRanges, bDoRimLighting, g_RimExponent,
 
             // Outputs
             specularLighting, rimLighting);
@@ -246,8 +342,8 @@ void main()
 
         DoSpecularFlashlight(g_FlashlightPos, vWorldPos, flashlightSpacePosition, worldSpaceNormal,
             g_FlashlightAttenuationFactors.xyz, g_FlashlightAttenuationFactors.w,
-            FlashlightSampler, ShadowDepthSampler, ShadowDepthSamplerRaw, NormalizeRandRotSampler, FLASHLIGHTDEPTHFILTERMODE, FLASHLIGHTSHADOWS != 0, true, vProjPos.xy / vProjPos.z,
-            fSpecExp, vEyeDir, bDoSpecularWarp, SpecularWarpSampler, fFresnelRanges, g_EnvmapTint_ShadowTweaks,
+            TEX2D_ARG(FlashlightSampler), TEX2DSHADOW_ARG(ShadowDepthSampler), TEX2D_ARG(ShadowDepthSamplerRaw), TEX2D_ARG(NormalizeRandRotSampler), FLASHLIGHTDEPTHFILTERMODE, FLASHLIGHTSHADOWS != 0, true, vProjPos.xy / vProjPos.z,
+            fSpecExp, vEyeDir, bDoSpecularWarp, TEX2D_ARG(SpecularWarpSampler), fFresnelRanges, g_EnvmapTint_ShadowTweaks,
 
             // These two values are output
             diffuseLighting, specularLighting);

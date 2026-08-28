@@ -59,17 +59,83 @@ out vec4 fragColor;
 #define g_FlashlightPos						ps_const[23].xyz
 #define g_FlashlightWorldToTexture			mat4(ps_const[24], ps_const[25], ps_const[26], ps_const[27]) // through c27
 
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 0) uniform texture2D BaseTextureSampler_tex;
+layout(set = 1, binding = 1) uniform sampler BaseTextureSampler_smp;
+#define BaseTextureSampler sampler2D(BaseTextureSampler_tex, BaseTextureSampler_smp)
+#else
 layout(binding = 0) uniform sampler2D BaseTextureSampler;
+#endif
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 2) uniform textureCube EnvmapSampler_tex;
+layout(set = 1, binding = 3) uniform sampler EnvmapSampler_smp;
+#define EnvmapSampler samplerCube(EnvmapSampler_tex, EnvmapSampler_smp)
+#else
 layout(binding = 1) uniform samplerCube EnvmapSampler;
+#endif
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 4) uniform texture2D DetailSampler_tex;
+layout(set = 1, binding = 5) uniform sampler DetailSampler_smp;
+#define DetailSampler sampler2D(DetailSampler_tex, DetailSampler_smp)
+#else
 layout(binding = 2) uniform sampler2D DetailSampler;
+#endif
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 6) uniform texture2D BumpmapSampler_tex;
+layout(set = 1, binding = 7) uniform sampler BumpmapSampler_smp;
+#define BumpmapSampler sampler2D(BumpmapSampler_tex, BumpmapSampler_smp)
+#else
 layout(binding = 3) uniform sampler2D BumpmapSampler;
+#endif
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 8) uniform texture2D EnvmapMaskSampler_tex;
+layout(set = 1, binding = 9) uniform sampler EnvmapMaskSampler_smp;
+#define EnvmapMaskSampler sampler2D(EnvmapMaskSampler_tex, EnvmapMaskSampler_smp)
+#else
 layout(binding = 4) uniform sampler2D EnvmapMaskSampler;
+#endif
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 10) uniform texture2D NormalizeSampler_tex;
+layout(set = 1, binding = 11) uniform sampler NormalizeSampler_smp;
+#define NormalizeSampler sampler2D(NormalizeSampler_tex, NormalizeSampler_smp)
+#else
 layout(binding = 5) uniform sampler2D NormalizeSampler;
+#endif
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 12) uniform texture2D RandRotSampler_tex;
+layout(set = 1, binding = 13) uniform sampler RandRotSampler_smp;
+#define RandRotSampler sampler2D(RandRotSampler_tex, RandRotSampler_smp)
+#else
 layout(binding = 6) uniform sampler2D RandRotSampler;			// RandomRotation sampler
+#endif
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 14) uniform texture2D FlashlightSampler_tex;
+layout(set = 1, binding = 15) uniform sampler FlashlightSampler_smp;
+#define FlashlightSampler sampler2D(FlashlightSampler_tex, FlashlightSampler_smp)
+#else
 layout(binding = 7) uniform sampler2D FlashlightSampler;
+#endif
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 16) uniform texture2D ShadowDepthSampler_tex;
+layout(set = 1, binding = 17) uniform sampler ShadowDepthSampler_smp;
+#define ShadowDepthSampler sampler2DShadow(ShadowDepthSampler_tex, ShadowDepthSampler_smp)
+#else
 layout(binding = 8) uniform sampler2DShadow ShadowDepthSampler;	// Flashlight shadow depth map sampler
+#endif
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 20) uniform texture2D ShadowDepthSamplerRaw_tex;
+layout(set = 1, binding = 21) uniform sampler ShadowDepthSamplerRaw_smp;
+#define ShadowDepthSamplerRaw sampler2D(ShadowDepthSamplerRaw_tex, ShadowDepthSamplerRaw_smp)
+#else
 layout(binding = 8) uniform sampler2D ShadowDepthSamplerRaw;
+#endif
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 18) uniform texture2D DiffuseWarpSampler_tex;
+layout(set = 1, binding = 19) uniform sampler DiffuseWarpSampler_smp;
+#define DiffuseWarpSampler sampler2D(DiffuseWarpSampler_tex, DiffuseWarpSampler_smp)
+#else
 layout(binding = 9) uniform sampler2D DiffuseWarpSampler;		// Lighting warp sampler (1D texture for diffuse lighting modification)
+#endif
 
 // Calculate both types of Fog and lerp to get result
 float CalcPixelFogFactorConst(float fPixelFogType, vec4 fogParams, float flEyePosZ, float flWorldPosZ, float flProjPosZ)
@@ -167,7 +233,7 @@ void main()
         diffuseLighting = PixelShaderDoLighting(vs_WorldPos_ProjPosZ.xyz, worldSpaceNormal,
                 vec3(0.0, 0.0, 0.0), false, bAmbientLight, vLightAtten,
                 cAmbientCube, nNumLights, cLightInfo, bHalfLambert,
-                false, 1.0, bDoDiffuseWarp, DiffuseWarpSampler);
+                false, 1.0, bDoDiffuseWarp, TEX2D_ARG(DiffuseWarpSampler));
     }
 
     vec3 albedo = baseColor.rgb;
@@ -205,8 +271,8 @@ void main()
 
         vec3 flashlightColor = DoFlashlight(g_FlashlightPos, vs_WorldPos_ProjPosZ.xyz, flashlightSpacePosition,
             worldSpaceNormal, g_FlashlightAttenuationFactors.xyz,
-            g_FlashlightAttenuationFactors.w, FlashlightSampler, ShadowDepthSampler, ShadowDepthSamplerRaw,
-            RandRotSampler, nShadowSampleLevel, bDoShadows, false, vProjPos, false, g_EnvmapContrast_ShadowTweaks, true);
+            g_FlashlightAttenuationFactors.w, TEX2D_ARG(FlashlightSampler), TEX2DSHADOW_ARG(ShadowDepthSampler), TEX2D_ARG(ShadowDepthSamplerRaw),
+            TEX2D_ARG(RandRotSampler), nShadowSampleLevel, bDoShadows, false, vProjPos, false, g_EnvmapContrast_ShadowTweaks, true);
 
         diffuseLighting = flashlightColor;
     }

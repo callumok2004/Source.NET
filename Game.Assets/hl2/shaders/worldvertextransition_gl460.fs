@@ -12,10 +12,30 @@ layout(std140, binding = 3) uniform source_pixel_sharedUBO {
 const int VertexColor = 16;
 const int VertexAlpha = 32;
 
-uniform int flags;
-uniform sampler2D basetexture;
-uniform sampler2D basetexture2;
-uniform sampler2D lightmaptexture;
+layout(std140, binding = 1) uniform source_base_sharedUBO {
+    int flags;
+};
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 0) uniform texture2D basetexture_tex;
+layout(set = 1, binding = 1) uniform sampler basetexture_smp;
+#define basetexture sampler2D(basetexture_tex, basetexture_smp)
+#else
+layout(binding = 0) uniform sampler2D basetexture;
+#endif
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 2) uniform texture2D basetexture2_tex;
+layout(set = 1, binding = 3) uniform sampler basetexture2_smp;
+#define basetexture2 sampler2D(basetexture2_tex, basetexture2_smp)
+#else
+layout(binding = 1) uniform sampler2D basetexture2;
+#endif
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 4) uniform texture2D lightmaptexture_tex;
+layout(set = 1, binding = 5) uniform sampler lightmaptexture_smp;
+#define lightmaptexture sampler2D(lightmaptexture_tex, lightmaptexture_smp)
+#else
+layout(binding = 2) uniform sampler2D lightmaptexture;
+#endif
 
 out vec4 fragColor;
 
@@ -29,15 +49,13 @@ void main()
     vec4 lightmapColor = texture(lightmaptexture, vs_TexCoord1);
 
     if(isAlphaTesting){
-        switch(alphaTestFunc){
-            case 0: discard; break;
-            case 1: if(texelColor.a >=  alphaTestRef){ discard; } break;
-            case 2: if(texelColor.a != alphaTestRef){ discard; } break;
-            case 3: if(texelColor.a > alphaTestRef){ discard; } break;
-            case 4: if(texelColor.a <=  alphaTestRef){ discard; } break;
-            case 5: if(texelColor.a == alphaTestRef){ discard; } break;
-            case 6: if(texelColor.a < alphaTestRef){ discard; } break;
-        }
+        if(alphaTestFunc == 0){ discard; }
+        else if(alphaTestFunc == 1){ if(texelColor.a >= alphaTestRef){ discard; } }
+        else if(alphaTestFunc == 2){ if(texelColor.a != alphaTestRef){ discard; } }
+        else if(alphaTestFunc == 3){ if(texelColor.a > alphaTestRef){ discard; } }
+        else if(alphaTestFunc == 4){ if(texelColor.a <= alphaTestRef){ discard; } }
+        else if(alphaTestFunc == 5){ if(texelColor.a == alphaTestRef){ discard; } }
+        else if(alphaTestFunc == 6){ if(texelColor.a < alphaTestRef){ discard; } }
     }
 
     vec4 vertexColor = vec4(1.0, 1.0, 1.0, 1.0);

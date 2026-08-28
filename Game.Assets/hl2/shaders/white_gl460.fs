@@ -8,7 +8,9 @@ layout(std140, binding = 3) uniform source_pixel_sharedUBO {
     float alphaTestRef;
 };
 
-uniform int flags;
+layout(std140, binding = 1) uniform source_base_sharedUBO {
+    int flags;
+};
 
 out vec4 fragColor;
 

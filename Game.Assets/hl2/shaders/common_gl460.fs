@@ -42,9 +42,9 @@
 #define NORM_DECODE_ATI2N			1
 #define NORM_DECODE_ATI2N_ALPHA		2
 
-vec4 DecompressNormal(sampler2D NormalSampler, vec2 tc, int nDecompressionMode, sampler2D AlphaSampler)
+vec4 DecompressNormal(TEX2D_PARAM(NormalSampler), vec2 tc, int nDecompressionMode, TEX2D_PARAM(AlphaSampler))
 {
-    vec4 normalTexel = texture(NormalSampler, tc);
+    vec4 normalTexel = texture(TEX2D(NormalSampler), tc);
     vec4 result;
 
     if (nDecompressionMode == NORM_DECODE_NONE)
@@ -61,20 +61,20 @@ vec4 DecompressNormal(sampler2D NormalSampler, vec2 tc, int nDecompressionMode, 
     {
         result.xy = normalTexel.xy * 2.0 - 1.0;
         result.z = sqrt(1.0 - dot(result.xy, result.xy));
-        result.a = texture(AlphaSampler, tc).x;					// Note that this comes in on the X channel
+        result.a = texture(TEX2D(AlphaSampler), tc).x;					// Note that this comes in on the X channel
     }
 
     return result;
 }
 
-vec4 DecompressNormal(sampler2D NormalSampler, vec2 tc, int nDecompressionMode)
+vec4 DecompressNormal(TEX2D_PARAM(NormalSampler), vec2 tc, int nDecompressionMode)
 {
-    return DecompressNormal(NormalSampler, tc, nDecompressionMode, NormalSampler);
+    return DecompressNormal(TEX2D_ARG(NormalSampler), tc, nDecompressionMode, TEX2D_ARG(NormalSampler));
 }
 
-vec3 NormalizeWithCubemap(samplerCube normalizeSampler, vec3 input_)
+vec3 NormalizeWithCubemap(TEXCUBE_PARAM(normalizeSampler), vec3 input_)
 {
-    return texture(normalizeSampler, input_).xyz * 2.0 - 1.0;
+    return texture(TEXCUBE(normalizeSampler), input_).xyz * 2.0 - 1.0;
 }
 
 // texture combining modes for combining base and detail/basetexture2
@@ -202,10 +202,26 @@ vec3 BlendPixelFog(vec3 vShaderColor, float pixelFogFactor, vec3 vFogColor, int 
     return vShaderColor;
 }
 
-// The framebuffer performs the linear->gamma conversion for us (GL_FRAMEBUFFER_SRGB), which is
-// the equivalent of the CONVERT_TO_SRGB == 0 path.
+#ifdef SOURCE_VULKAN
+layout(std140, set = 0, binding = 7) uniform source_srgb_state {
+    int g_SRGBWrite;
+    int g_SRGBStatePad0;
+    int g_SRGBStatePad1;
+    int g_SRGBStatePad2;
+};
+#endif
+
 vec3 SRGBOutput(vec3 vShaderColor)
 {
+#ifdef SOURCE_VULKAN
+    if (g_SRGBWrite != 0)
+    {
+        vec3 linearPart = vShaderColor * 12.92;
+        vec3 gammaPart = 1.055 * pow(max(vShaderColor, vec3(0.0)), vec3(1.0 / 2.4)) - 0.055;
+        return mix(gammaPart, linearPart, lessThanEqual(vShaderColor, vec3(0.0031308)));
+    }
+#endif
+
     return vShaderColor;
 }
 
@@ -261,10 +277,10 @@ float RemapValClamped(float val, float A, float B, float C, float D)
     return C + (D - C) * cVal;
 }
 
-float DepthFeathering(sampler2D DepthSampler, vec2 vScreenPos, float fProjZ, float fProjW, vec4 vDepthBlendConstants)
+float DepthFeathering(TEX2D_PARAM(DepthSampler), vec2 vScreenPos, float fProjZ, float fProjW, vec4 vDepthBlendConstants)
 {
     float flFeatheredAlpha;
-    float flSceneDepth = texture(DepthSampler, vScreenPos).a;	// PC uses dest alpha of the frame buffer
+    float flSceneDepth = texture(TEX2D(DepthSampler), vScreenPos).a;	// PC uses dest alpha of the frame buffer
     float flSpriteDepth = SoftParticleDepth(fProjZ);
 
     flFeatheredAlpha = abs(flSceneDepth - flSpriteDepth) * vDepthBlendConstants.x;

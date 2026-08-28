@@ -119,45 +119,129 @@ const vec4 g_SelfIllumTint = vec4(1.0, 1.0, 1.0, 1.0);
 
 #define g_flAlpha2 g_TintValuesAndLightmapScale.w
 
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 0) uniform texture2D BaseTextureSampler_tex;
+layout(set = 1, binding = 1) uniform sampler BaseTextureSampler_smp;
+#define BaseTextureSampler sampler2D(BaseTextureSampler_tex, BaseTextureSampler_smp)
+#else
 layout(binding = 0) uniform sampler2D BaseTextureSampler;
+#endif
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 2) uniform texture2D LightmapSampler_tex;
+layout(set = 1, binding = 3) uniform sampler LightmapSampler_smp;
+#define LightmapSampler sampler2D(LightmapSampler_tex, LightmapSampler_smp)
+#else
 layout(binding = 1) uniform sampler2D LightmapSampler;
+#endif
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 4) uniform textureCube EnvmapSampler_tex;
+layout(set = 1, binding = 5) uniform sampler EnvmapSampler_smp;
+#define EnvmapSampler samplerCube(EnvmapSampler_tex, EnvmapSampler_smp)
+#else
 layout(binding = 2) uniform samplerCube EnvmapSampler;
+#endif
 #if FANCY_BLENDING
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 6) uniform texture2D BlendModulationSampler_tex;
+layout(set = 1, binding = 7) uniform sampler BlendModulationSampler_smp;
+#define BlendModulationSampler sampler2D(BlendModulationSampler_tex, BlendModulationSampler_smp)
+#else
 layout(binding = 3) uniform sampler2D BlendModulationSampler;
+#endif
 #endif
 
 #if DETAILTEXTURE
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 24) uniform texture2D DetailSampler_tex;
+layout(set = 1, binding = 25) uniform sampler DetailSampler_smp;
+#define DetailSampler sampler2D(DetailSampler_tex, DetailSampler_smp)
+#else
 layout(binding = 12) uniform sampler2D DetailSampler;
 #endif
+#endif
 
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 8) uniform texture2D BumpmapSampler_tex;
+layout(set = 1, binding = 9) uniform sampler BumpmapSampler_smp;
+#define BumpmapSampler sampler2D(BumpmapSampler_tex, BumpmapSampler_smp)
+#else
 layout(binding = 4) uniform sampler2D BumpmapSampler;
+#endif
 #if NORMAL_DECODE_MODE == NORM_DECODE_ATI2N_ALPHA
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 18) uniform texture2D AlphaMapSampler_tex;
+layout(set = 1, binding = 19) uniform sampler AlphaMapSampler_smp;
+#define AlphaMapSampler sampler2D(AlphaMapSampler_tex, AlphaMapSampler_smp)
+#else
 layout(binding = 9) uniform sampler2D AlphaMapSampler;	// alpha
+#endif
 #else
 #define AlphaMapSampler		BumpmapSampler
 #endif
 
 #if BUMPMAP2 == 1
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 10) uniform texture2D BumpmapSampler2_tex;
+layout(set = 1, binding = 11) uniform sampler BumpmapSampler2_smp;
+#define BumpmapSampler2 sampler2D(BumpmapSampler2_tex, BumpmapSampler2_smp)
+#else
 layout(binding = 5) uniform sampler2D BumpmapSampler2;
+#endif
 #if NORMAL_DECODE_MODE == NORM_DECODE_ATI2N_ALPHA
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 20) uniform texture2D AlphaMapSampler2_tex;
+layout(set = 1, binding = 21) uniform sampler AlphaMapSampler2_smp;
+#define AlphaMapSampler2 sampler2D(AlphaMapSampler2_tex, AlphaMapSampler2_smp)
+#else
 layout(binding = 10) uniform sampler2D AlphaMapSampler2;	// alpha
+#endif
 #else
 #define AlphaMapSampler2		BumpmapSampler2
 #endif
 #else
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 10) uniform texture2D EnvmapMaskSampler_tex;
+layout(set = 1, binding = 11) uniform sampler EnvmapMaskSampler_smp;
+#define EnvmapMaskSampler sampler2D(EnvmapMaskSampler_tex, EnvmapMaskSampler_smp)
+#else
 layout(binding = 5) uniform sampler2D EnvmapMaskSampler;
+#endif
 #endif
 
 
 #if WARPLIGHTING
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 12) uniform texture2D WarpLightingSampler_tex;
+layout(set = 1, binding = 13) uniform sampler WarpLightingSampler_smp;
+#define WarpLightingSampler sampler2D(WarpLightingSampler_tex, WarpLightingSampler_smp)
+#else
 layout(binding = 6) uniform sampler2D WarpLightingSampler;
 #endif
+#endif
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 14) uniform texture2D BaseTextureSampler2_tex;
+layout(set = 1, binding = 15) uniform sampler BaseTextureSampler2_smp;
+#define BaseTextureSampler2 sampler2D(BaseTextureSampler2_tex, BaseTextureSampler2_smp)
+#else
 layout(binding = 7) uniform sampler2D BaseTextureSampler2;
+#endif
 
 #if BUMPMASK == 1
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 16) uniform texture2D BumpMaskSampler_tex;
+layout(set = 1, binding = 17) uniform sampler BumpMaskSampler_smp;
+#define BumpMaskSampler sampler2D(BumpMaskSampler_tex, BumpMaskSampler_smp)
+#else
 layout(binding = 8) uniform sampler2D BumpMaskSampler;
+#endif
 #if NORMALMASK_DECODE_MODE == NORM_DECODE_ATI2N_ALPHA
+#ifdef SOURCE_VULKAN
+layout(set = 1, binding = 22) uniform texture2D AlphaMaskSampler_tex;
+layout(set = 1, binding = 23) uniform sampler AlphaMaskSampler_smp;
+#define AlphaMaskSampler sampler2D(AlphaMaskSampler_tex, AlphaMaskSampler_smp)
+#else
 layout(binding = 11) uniform sampler2D AlphaMaskSampler;	// alpha
+#endif
 #else
 #define AlphaMaskSampler		BumpMaskSampler
 #endif
@@ -188,7 +272,7 @@ void main()
     baseTexCoords.xy = vs_BaseTexCoord.xy;
 #endif
 
-    GetBaseTextureAndNormal(BaseTextureSampler, BaseTextureSampler2, BumpmapSampler, bBaseTexture2, bBumpmap || bNormalMapAlphaEnvmapMask,
+    GetBaseTextureAndNormal(TEX2D_ARG(BaseTextureSampler), TEX2D_ARG(BaseTextureSampler2), TEX2D_ARG(BumpmapSampler), bBaseTexture2, bBumpmap || bNormalMapAlphaEnvmapMask,
         baseTexCoords, vs_Color.rgb, baseColor, baseColor2, vNormal);
 
 #if BUMPMAP == 1	// not ssbump
@@ -207,14 +291,14 @@ void main()
         ComputeBumpedLightmapCoordinates(vs_LightmapTexCoord1And2, vs_LightmapTexCoord3.xy,
             bumpCoord1, bumpCoord2, bumpCoord3);
 
-        lightmapColor1 = LightMapSample(LightmapSampler, bumpCoord1);
-        lightmapColor2 = LightMapSample(LightmapSampler, bumpCoord2);
-        lightmapColor3 = LightMapSample(LightmapSampler, bumpCoord3);
+        lightmapColor1 = LightMapSample(TEX2D_ARG(LightmapSampler), bumpCoord1);
+        lightmapColor2 = LightMapSample(TEX2D_ARG(LightmapSampler), bumpCoord2);
+        lightmapColor3 = LightMapSample(TEX2D_ARG(LightmapSampler), bumpCoord3);
     }
     else
     {
         vec2 bumpCoord1 = ComputeLightmapCoordinates(vs_LightmapTexCoord1And2, vs_LightmapTexCoord3.xy);
-        lightmapColor1 = LightMapSample(LightmapSampler, bumpCoord1);
+        lightmapColor1 = LightMapSample(TEX2D_ARG(LightmapSampler), bumpCoord1);
     }
 #endif
 
@@ -323,7 +407,7 @@ void main()
             if (BUMPMAP == 2)
                 vNormal2 = texture(BumpmapSampler2, b2TexCoord);
             else
-                vNormal2 = DecompressNormal(BumpmapSampler2, b2TexCoord, NORMAL_DECODE_MODE, AlphaMapSampler2);		// Bump 2 coords
+                vNormal2 = DecompressNormal(TEX2D_ARG(BumpmapSampler2), b2TexCoord, NORMAL_DECODE_MODE, TEX2D_ARG(AlphaMapSampler2));		// Bump 2 coords
 
             if (bBaseTexture2NoEnvmap)
             {
@@ -331,12 +415,12 @@ void main()
             }
 
     #if ( BUMPMASK == 1 )
-            vec3 vNormal1 = DecompressNormal(BumpmapSampler, vs_DetailOrBumpAndEnvmapMaskTexCoord.xy, NORMALMASK_DECODE_MODE, AlphaMapSampler).xyz;
+            vec3 vNormal1 = DecompressNormal(TEX2D_ARG(BumpmapSampler), vs_DetailOrBumpAndEnvmapMaskTexCoord.xy, NORMALMASK_DECODE_MODE, TEX2D_ARG(AlphaMapSampler)).xyz;
 
             vNormal.xyz = normalize(vNormal1.xyz + vNormal2.xyz);
 
             // Third normal map...same coords as base
-            vNormalMask = DecompressNormal(BumpMaskSampler, vs_BaseTexCoord.xy, NORMALMASK_DECODE_MODE, AlphaMaskSampler);
+            vNormalMask = DecompressNormal(TEX2D_ARG(BumpMaskSampler), vs_BaseTexCoord.xy, NORMALMASK_DECODE_MODE, TEX2D_ARG(AlphaMaskSampler));
 
             vNormal.xyz = mix(vNormalMask.xyz, vNormal.xyz, vNormalMask.a);		// Mask out normals from vNormal
             specularFactor = vec3(vNormalMask.a);

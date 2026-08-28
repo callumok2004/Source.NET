@@ -1,7 +1,7 @@
 #ifndef COMMON_LIGHTMAPPEDGENERIC_GL460_FS
 #define COMMON_LIGHTMAPPEDGENERIC_GL460_FS
 
-void GetBaseTextureAndNormal(sampler2D base, sampler2D base2, sampler2D bump, bool bBase2, bool bBump, vec3 coords, vec3 vWeights,
+void GetBaseTextureAndNormal(TEX2D_PARAM(base), TEX2D_PARAM(base2), TEX2D_PARAM(bump), bool bBase2, bool bBump, vec3 coords, vec3 vWeights,
                              out vec4 vResultBase, out vec4 vResultBase2, out vec4 vResultBump)
 {
     vResultBase = vec4(0.0);
@@ -15,46 +15,46 @@ void GetBaseTextureAndNormal(sampler2D base, sampler2D base2, sampler2D bump, bo
 
 #if SEAMLESS
 
-    vResultBase  += vWeights.x * texture(base, coords.zy);
+    vResultBase  += vWeights.x * texture(TEX2D(base), coords.zy);
     if (bBase2)
     {
-        vResultBase2 += vWeights.x * texture(base2, coords.zy);
+        vResultBase2 += vWeights.x * texture(TEX2D(base2), coords.zy);
     }
     if (bBump)
     {
-        vResultBump  += vWeights.x * texture(bump, coords.zy);
+        vResultBump  += vWeights.x * texture(TEX2D(bump), coords.zy);
     }
 
-    vResultBase  += vWeights.y * texture(base, coords.xz);
+    vResultBase  += vWeights.y * texture(TEX2D(base), coords.xz);
     if (bBase2)
     {
-        vResultBase2 += vWeights.y * texture(base2, coords.xz);
+        vResultBase2 += vWeights.y * texture(TEX2D(base2), coords.xz);
     }
     if (bBump)
     {
-        vResultBump  += vWeights.y * texture(bump, coords.xz);
+        vResultBump  += vWeights.y * texture(TEX2D(bump), coords.xz);
     }
 
-    vResultBase  += vWeights.z * texture(base, coords.xy);
+    vResultBase  += vWeights.z * texture(TEX2D(base), coords.xy);
     if (bBase2)
     {
-        vResultBase2 += vWeights.z * texture(base2, coords.xy);
+        vResultBase2 += vWeights.z * texture(TEX2D(base2), coords.xy);
     }
     if (bBump)
     {
-        vResultBump  += vWeights.z * texture(bump, coords.xy);
+        vResultBump  += vWeights.z * texture(TEX2D(bump), coords.xy);
     }
 
 #else  // not seamless
 
-    vResultBase  = texture(base, coords.xy);
+    vResultBase  = texture(TEX2D(base), coords.xy);
     if (bBase2)
     {
-        vResultBase2 = texture(base2, coords.xy);
+        vResultBase2 = texture(TEX2D(base2), coords.xy);
     }
     if (bBump)
     {
-        vResultBump  = texture(bump, coords.xy);
+        vResultBump  = texture(TEX2D(bump), coords.xy);
     }
 #endif
 
@@ -103,7 +103,7 @@ float h1(float a) {
 #define BICUBIC_LIGHTMAP 0
 #endif
 
-vec3 LightMapSample(sampler2D LightmapSampler, vec2 vTexCoord)
+vec3 LightMapSample(TEX2D_PARAM(LightmapSampler), vec2 vTexCoord)
 {
 #if BICUBIC_LIGHTMAP
     float flLightmapPageWidth = 1024;
@@ -130,10 +130,10 @@ vec3 LightMapSample(sampler2D LightmapSampler, vec2 vTexCoord)
     vec2 p3 = (vec2(iuv.x + h1x, iuv.y + h1y) - vec2(0.5, 0.5)) * vTexelSize;
 
     vec3 samp =
-        (g0(fuv.y) * (g0x * texture(LightmapSampler, p0).rgb + g1x * texture(LightmapSampler, p1).rgb)) +
-        (g1(fuv.y) * (g0x * texture(LightmapSampler, p2).rgb + g1x * texture(LightmapSampler, p3).rgb));
+        (g0(fuv.y) * (g0x * texture(TEX2D(LightmapSampler), p0).rgb + g1x * texture(TEX2D(LightmapSampler), p1).rgb)) +
+        (g1(fuv.y) * (g0x * texture(TEX2D(LightmapSampler), p2).rgb + g1x * texture(TEX2D(LightmapSampler), p3).rgb));
 #else
-    vec3 samp = texture(LightmapSampler, vTexCoord).rgb;
+    vec3 samp = texture(TEX2D(LightmapSampler), vTexCoord).rgb;
 #endif
 
     return samp;
